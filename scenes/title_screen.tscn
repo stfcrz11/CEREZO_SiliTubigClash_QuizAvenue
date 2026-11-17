@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://dlt8wppvmuudg" path="res://scenes/title_screen.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://by4s1w0ef5ofj" path="res://assets/backgrounds/title_city_pixel.png" id="2"]
 [ext_resource type="Script" uid="uid://c2wxq4j8wv6qy" path="res://scenes/png_button.gd" id="3"]
-[ext_resource type="Texture2D" uid="uid://dvsa8rd0k2eiy" path="res://assets/ui/title_logo.png" id="4"]
 [ext_resource type="Texture2D" uid="uid://cwgm40xx44hvl" path="res://assets/ui/button_host.png" id="5"]
 [ext_resource type="Texture2D" uid="uid://cs04hlo4gcpvl" path="res://assets/ui/button_join.png" id="6"]
 [ext_resource type="Texture2D" uid="uid://dfxpvm3fo13tc" path="res://assets/ui/button_how_to_play.png" id="7"]
@@ -20,10 +19,28 @@
 [ext_resource type="Texture2D" uid="uid://brcnw10tt12si" path="res://assets/ui/button_solo.png" id="18"]
 [ext_resource type="Script" uid="uid://lbbtprpclndk" path="res://scenes/title_runners.gd" id="19"]
 [ext_resource type="Texture2D" uid="uid://cv3xn1u3hwugb" path="res://assets/ui/button_credits.png" id="20"]
-[ext_resource type="Texture2D" path="res://assets/ui/icon_avatar.png" id="21"]
-[ext_resource type="Texture2D" path="res://assets/ui/icon_pencil.png" id="22"]
-[ext_resource type="Texture2D" path="res://assets/ui/button_save.png" id="23"]
+[ext_resource type="Texture2D" uid="uid://dquiiw4ad7m88" path="res://assets/ui/icon_avatar.png" id="21"]
+[ext_resource type="Texture2D" uid="uid://dbf8lcxvdub80" path="res://assets/ui/icon_pencil.png" id="22"]
+[ext_resource type="Texture2D" uid="uid://pnxr7la5u2gu" path="res://assets/ui/button_save.png" id="23"]
 [ext_resource type="Texture2D" uid="uid://dic03r71rmtbw" path="res://assets/ui/button_cancel.png" id="24"]
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_jr68i"]
+load_path = "res://.godot/imported/title_logo.png-7eb6fb5fc9acd758a84c85b885e93897.ctex"
+
+[sub_resource type="StyleBoxTexture" id="StyleBox_h"]
+texture = ExtResource("11")
+texture_margin_left = 20.0
+texture_margin_top = 20.0
+texture_margin_right = 20.0
+texture_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxFlat" id="LeaderRow"]
+content_margin_left = 6.0
+content_margin_top = 3.0
+content_margin_right = 8.0
+content_margin_bottom = 3.0
+bg_color = Color(0.14, 0.17, 0.26, 0.95)
+anti_aliasing = false
 
 [sub_resource type="StyleBoxFlat" id="ProfileCard"]
 content_margin_left = 8.0
@@ -38,12 +55,12 @@ border_width_bottom = 3
 border_color = Color(0.8, 0.84, 0.9, 1)
 anti_aliasing = false
 
-[sub_resource type="StyleBoxFlat" id="ProfileCardHover"]
+[sub_resource type="StyleBoxFlat" id="ProfileCardPressed"]
 content_margin_left = 8.0
 content_margin_top = 6.0
 content_margin_right = 8.0
 content_margin_bottom = 6.0
-bg_color = Color(0.14, 0.17, 0.26, 0.95)
+bg_color = Color(0.09, 0.11, 0.17, 1)
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
@@ -51,12 +68,12 @@ border_width_bottom = 3
 border_color = Color(0.93, 0.7, 0.2, 1)
 anti_aliasing = false
 
-[sub_resource type="StyleBoxFlat" id="ProfileCardPressed"]
+[sub_resource type="StyleBoxFlat" id="ProfileCardHover"]
 content_margin_left = 8.0
 content_margin_top = 6.0
 content_margin_right = 8.0
 content_margin_bottom = 6.0
-bg_color = Color(0.09, 0.11, 0.17, 1)
+bg_color = Color(0.14, 0.17, 0.26, 0.95)
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
@@ -84,21 +101,6 @@ border_width_top = 4
 border_width_right = 4
 border_width_bottom = 4
 border_color = Color(0.93, 0.7, 0.2, 1)
-anti_aliasing = false
-
-[sub_resource type="StyleBoxTexture" id="StyleBox_h"]
-texture = ExtResource("11")
-texture_margin_left = 20.0
-texture_margin_top = 20.0
-texture_margin_right = 20.0
-texture_margin_bottom = 20.0
-
-[sub_resource type="StyleBoxFlat" id="LeaderRow"]
-content_margin_left = 6.0
-content_margin_top = 3.0
-content_margin_right = 8.0
-content_margin_bottom = 3.0
-bg_color = Color(0.14, 0.17, 0.26, 0.95)
 anti_aliasing = false
 
 [node name="TitleScreen" type="Control" unique_id=1495704812]
@@ -186,7 +188,7 @@ texture_filter = 2
 custom_minimum_size = Vector2(0, 130)
 layout_mode = 2
 mouse_filter = 2
-texture = ExtResource("4")
+texture = SubResource("CompressedTexture2D_jr68i")
 expand_mode = 1
 stretch_mode = 5
 
@@ -428,7 +430,7 @@ ignore_texture_size = true
 stretch_mode = 5
 script = ExtResource("3")
 
-[node name="ProfileCard" type="Button" parent="."]
+[node name="ProfileCard" type="Button" parent="." unique_id=1259360820]
 custom_minimum_size = Vector2(200, 52)
 layout_mode = 1
 offset_left = 14.0
@@ -439,11 +441,11 @@ tooltip_text = "Change player name"
 focus_mode = 0
 mouse_default_cursor_shape = 2
 theme_override_styles/normal = SubResource("ProfileCard")
-theme_override_styles/hover = SubResource("ProfileCardHover")
 theme_override_styles/pressed = SubResource("ProfileCardPressed")
+theme_override_styles/hover = SubResource("ProfileCardHover")
 theme_override_styles/hover_pressed = SubResource("ProfileCardPressed")
 
-[node name="HBox" type="HBoxContainer" parent="ProfileCard"]
+[node name="HBox" type="HBoxContainer" parent="ProfileCard" unique_id=1786930666]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -457,7 +459,7 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_constants/separation = 8
 
-[node name="Avatar" type="TextureRect" parent="ProfileCard/HBox"]
+[node name="Avatar" type="TextureRect" parent="ProfileCard/HBox" unique_id=2075750259]
 texture_filter = 1
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
@@ -467,7 +469,7 @@ texture = ExtResource("21")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="ProfileCard/HBox"]
+[node name="NameLabel" type="Label" parent="ProfileCard/HBox" unique_id=1262854843]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 18
@@ -476,7 +478,7 @@ vertical_alignment = 1
 clip_text = true
 text_overrun_behavior = 3
 
-[node name="Pencil" type="TextureRect" parent="ProfileCard/HBox"]
+[node name="Pencil" type="TextureRect" parent="ProfileCard/HBox" unique_id=544864157]
 texture_filter = 1
 custom_minimum_size = Vector2(24, 24)
 layout_mode = 2
@@ -790,7 +792,7 @@ ignore_texture_size = true
 stretch_mode = 5
 script = ExtResource("3")
 
-[node name="NameDim" type="ColorRect" parent="."]
+[node name="NameDim" type="ColorRect" parent="." unique_id=1912248553]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -800,7 +802,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.02, 0.02, 0.06, 0.72)
 
-[node name="NamePopup" type="PanelContainer" parent="."]
+[node name="NamePopup" type="PanelContainer" parent="." unique_id=1423969860]
 visible = false
 layout_mode = 1
 anchors_preset = 8
@@ -816,26 +818,26 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBox_h")
 
-[node name="Margin" type="MarginContainer" parent="NamePopup"]
+[node name="Margin" type="MarginContainer" parent="NamePopup" unique_id=1979844524]
 layout_mode = 2
 theme_override_constants/margin_left = 18
 theme_override_constants/margin_top = 14
 theme_override_constants/margin_right = 14
 theme_override_constants/margin_bottom = 18
 
-[node name="VBox" type="VBoxContainer" parent="NamePopup/Margin"]
+[node name="VBox" type="VBoxContainer" parent="NamePopup/Margin" unique_id=809528022]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Header" type="HBoxContainer" parent="NamePopup/Margin/VBox"]
+[node name="Header" type="HBoxContainer" parent="NamePopup/Margin/VBox" unique_id=1767467762]
 layout_mode = 2
 
-[node name="Spacer" type="Control" parent="NamePopup/Margin/VBox/Header"]
+[node name="Spacer" type="Control" parent="NamePopup/Margin/VBox/Header" unique_id=1619205854]
 custom_minimum_size = Vector2(36, 0)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Title" type="Label" parent="NamePopup/Margin/VBox/Header"]
+[node name="Title" type="Label" parent="NamePopup/Margin/VBox/Header" unique_id=2045812899]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 0.82, 0.3, 1)
@@ -846,7 +848,7 @@ text = "CHANGE PLAYER NAME"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CloseButton" type="TextureButton" parent="NamePopup/Margin/VBox/Header"]
+[node name="CloseButton" type="TextureButton" parent="NamePopup/Margin/VBox/Header" unique_id=1794774327]
 custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
 size_flags_vertical = 4
@@ -856,12 +858,12 @@ ignore_texture_size = true
 stretch_mode = 5
 script = ExtResource("3")
 
-[node name="Divider" type="ColorRect" parent="NamePopup/Margin/VBox"]
+[node name="Divider" type="ColorRect" parent="NamePopup/Margin/VBox" unique_id=1256406477]
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
 color = Color(1, 0.82, 0.3, 0.5)
 
-[node name="Avatar" type="TextureRect" parent="NamePopup/Margin/VBox"]
+[node name="Avatar" type="TextureRect" parent="NamePopup/Margin/VBox" unique_id=1292185942]
 texture_filter = 1
 custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
@@ -871,7 +873,7 @@ texture = ExtResource("21")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="NameInput" type="LineEdit" parent="NamePopup/Margin/VBox"]
+[node name="NameInput" type="LineEdit" parent="NamePopup/Margin/VBox" unique_id=2042437030]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 theme_override_styles/normal = SubResource("NameField")
@@ -880,7 +882,7 @@ placeholder_text = "Enter your name"
 alignment = 1
 max_length = 12
 
-[node name="Hint" type="Label" parent="NamePopup/Margin/VBox"]
+[node name="Hint" type="Label" parent="NamePopup/Margin/VBox" unique_id=205232913]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.66, 0.76, 1)
 theme_override_font_sizes/font_size = 12
@@ -888,12 +890,12 @@ text = "Max 12 characters"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="Buttons" type="HBoxContainer" parent="NamePopup/Margin/VBox"]
+[node name="Buttons" type="HBoxContainer" parent="NamePopup/Margin/VBox" unique_id=1649053728]
 layout_mode = 2
 theme_override_constants/separation = 12
 alignment = 1
 
-[node name="SaveButton" type="TextureButton" parent="NamePopup/Margin/VBox/Buttons"]
+[node name="SaveButton" type="TextureButton" parent="NamePopup/Margin/VBox/Buttons" unique_id=843652580]
 custom_minimum_size = Vector2(150, 46)
 layout_mode = 2
 texture_normal = ExtResource("23")
@@ -901,7 +903,7 @@ ignore_texture_size = true
 stretch_mode = 5
 script = ExtResource("3")
 
-[node name="CancelButton" type="TextureButton" parent="NamePopup/Margin/VBox/Buttons"]
+[node name="CancelButton" type="TextureButton" parent="NamePopup/Margin/VBox/Buttons" unique_id=542707225]
 custom_minimum_size = Vector2(150, 46)
 layout_mode = 2
 texture_normal = ExtResource("24")
