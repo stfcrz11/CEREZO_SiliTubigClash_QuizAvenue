@@ -1,6 +1,6 @@
 # Release Readiness Checklist and Evidence Index (PT7 · PA2)
 
-## 1. Minimum game requirements (module) — status in v1.1.0
+## 1. Minimum game requirements (module) — status in v1.2.0
 
 | Requirement | Where | Status |
 |---|---|---|
@@ -11,7 +11,7 @@
 | Pause or settings + restart / retry | Pause button / Esc, Settings, Play Again / Retry / Next Round | Done |
 | Credits and acknowledgements | CREDITS button in game, `CREDITS.md`, README | Done — **audio sources still to add** |
 | Player-data / service component | Local profile, leaderboard with tamper check, reset | Done |
-| Error handling, stable installable build | Connection errors, damaged saves, backgrounding | **Rebuild APK for 1.1.0 and install from clean** |
+| Error handling, stable installable build | Connection errors, damaged saves, backgrounding | **Rebuild APK for 1.2.0 and install from clean** |
 
 ## 2. Release steps (to do)
 
@@ -19,7 +19,7 @@
 - [ ] Copy the tileset's and template's license terms into `docs/RESPONSIBLE_DEVELOPMENT.md`
 - [ ] Export the Android APK (Project → Export → Android) as `build/SiliTubig_TaskAvenue.apk`
 - [ ] Uninstall the old app, install the new APK, run TC-01…TC-26 on the phone
-- [ ] Record the commit ID in README; tag the release: `git tag v1.1.0` then `git push origin v1.1.0`
+- [ ] Record the commit ID in README; tag the release: `git tag v1.2.0` then `git push origin v1.2.0`
 - [ ] Fill the acceptance summary in `TEST_PLAN.md` and the phone table in `PERFORMANCE.md`
 
 ## 3. Evidence index

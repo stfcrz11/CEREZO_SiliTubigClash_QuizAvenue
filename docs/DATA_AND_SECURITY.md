@@ -1,6 +1,6 @@
 # Player Data, Security and Service Component (SA5 data inventory · PT5)
 
-**Version:** 1.1.0 · **Identity model:** local profile (no account)
+**Version:** 1.2.0 · **Identity model:** local profile (no account)
 
 ## 1. Data inventory
 

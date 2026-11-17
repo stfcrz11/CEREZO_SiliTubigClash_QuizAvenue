@@ -13,6 +13,10 @@
    - **JOIN GAME:** tap JOIN next to a game, or type the host's IP.
    Everyone must be on the same Wi-Fi or phone hotspot.
 
+## Roles
+- 2 players: both are Tubig and a **bot Sili** chases you. 3–4 players: 1 Sili. 5–6 players: 2 Silis.
+- Before every round you see your role and a 3-2-1-GO countdown.
+
 ## Goal
 - **Tubig:** answer the goal number of questions ("?" scrolls) before time runs out.
 - **Sili:** freeze every Tubig at the same time, or survive until time runs out.
@@ -24,13 +28,13 @@
 | Move | W A S D / arrows | Drag on the right half of the screen |
 | Sprint | Shift / Space | Hold RUN (bottom left) |
 | Use a power-up station | E | Tap USE (appears next to a station) |
-| Answer | 1–4 or click | Tap |
+| Answer | A B C D (1–4 also work) or click | Tap |
 | Ask a teammate for help | H | Tap the button |
 | Pause (host) | Esc | Pause button (top right) or Back |
-| Leave the game | Door button, tap twice | Door button, tap twice |
+| Leave the game | Door button → LEAVE GAME? → LEAVE | Door button → LEAVE GAME? → LEAVE |
 
 ## Leaving
-- **Solo:** leave any time (door button, top right, tap twice).
+- **Solo:** leave any time (door button, top right, then LEAVE; the round pauses while you decide).
 - **LAN host:** you can leave any time, but it **ends the game for everyone**.
 - **LAN players:** the door button unlocks when the round is over. If the host leaves,
   you see "GAME OVER — THE HOST LEFT" and can go back to the main menu.

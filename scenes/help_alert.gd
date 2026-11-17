@@ -16,6 +16,7 @@ signal answered(yes: bool)
 @onready var no_button: Button = $Panel/Margin/VBox/Buttons/NoButton
 
 const ButtonStyle := preload("res://scenes/ui_button_style.gd")
+const UiScale := preload("res://scenes/ui_scale.gd")
 
 
 func _ready() -> void:
@@ -24,14 +25,31 @@ func _ready() -> void:
 	ButtonStyle.style_secondary(no_button, Color(0.4, 0.4, 0.48))
 	yes_button.pressed.connect(_answer.bind(true))
 	no_button.pressed.connect(_answer.bind(false))
+	# key hints only on desktop
+	yes_button.text = "YES" if GameState.is_mobile_ui() else "YES (Y)"
+	no_button.text = "NO" if GameState.is_mobile_ui() else "NO (N)"
+
+
+## Bigger text and buttons on phones (maze_game calls this on resize too).
+func apply_ui_scale() -> void:
+	var vp := get_viewport()
+	var mobile := GameState.is_mobile_ui()
+	$Panel/Margin/VBox/Title.add_theme_font_size_override("font_size", UiScale.font(vp, 14))
+	message.add_theme_font_size_override("font_size", UiScale.font(vp, 16))
+	message.custom_minimum_size.x = 288.0 * (1.35 if mobile else 1.0)
+	for b in [yes_button, no_button]:
+		b.custom_minimum_size = Vector2(130.0 * (1.3 if mobile else 1.0), UiScale.touch_target(vp, 36.0))
+		b.add_theme_font_size_override("font_size", UiScale.font(vp, 16))
+	$Panel.offset_left = -340.0 * (1.4 if mobile else 1.0)
 
 
 func open(asker_name: String) -> void:
 	message.text = message_text % asker_name
 	# with touch controls, sit above the joystick's resting spot (bottom right)
-	var lift := 170.0 if GameState.touch_controls else 0.0
-	$Panel.offset_top = -190.0 - lift
+	var lift := 170.0 * UiScale.touch_target(get_viewport(), 64.0) / 64.0 if GameState.touch_controls_on() else 0.0
+	var h := 134.0 * (1.5 if GameState.is_mobile_ui() else 1.0)
 	$Panel.offset_bottom = -56.0 - lift
+	$Panel.offset_top = $Panel.offset_bottom - h
 	visible = true
 
 

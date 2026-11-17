@@ -473,57 +473,7 @@ theme_override_font_sizes/normal_font_size = 15
 theme_override_font_sizes/bold_font_size = 15
 theme_override_font_sizes/italics_font_size = 15
 bbcode_enabled = true
-text = "[center][color=#9aa4b8][i]A Filipino street chase game — with a quiz twist![/i][/color][/center]
-
-[font_size=19][b][color=#ffd24d]ROLES[/color][/b][/font_size]
-• 2–4 players → [color=#ff6155][b]1 Sili[/b][/color]   ·   5–6 players → [color=#ff6155][b]2 Silis[/b][/color]. Everyone else is [color=#5aa8ff][b]Tubig[/b][/color].
-• The [color=#ff6155][b]Sili[/b][/color] role rotates every round.
-
-[font_size=19][b][color=#5aa8ff]TUBIG TEAM[/color][/b][/font_size]
-• Goal: answer [color=#6be38a][b]10 questions[/b][/color] about Filipino culture before time runs out.
-• Time: [b]3:00[/b] for 1 [color=#5aa8ff][b]Tubig[/b][/color], [b]20 s less[/b] for each extra [color=#5aa8ff][b]Tubig[/b][/color] — you can answer at the same time.
-• Walk into a [b]? scroll[/b] to get a question. Answer by click, tap or [bgcolor=#33405e][color=#ffffff][b] 1–4 [/b][/color][/bgcolor].
-• [color=#ffd24d][b]Yellow dots[/b][/color] on your MAPA show where the scrolls are. The [color=#ff6155][b]Sili[/b][/color] can't see them — but may be waiting there!
-• While you answer you [b]can't move[/b] and [b]can't be tagged[/b]. The others keep playing.
-• Wrong answer? Find another scroll.
-• A [color=#ff6155][b]Sili[/b][/color] is near? You get a warning: [color=#ffa53d][b]SILI NEARBY![/b][/color] then [color=#ff6155][b]RUN![/b][/color]
-• Caught Tubigs freeze into an [b]ice block[/b].
-• [color=#6be38a][b]Buhos-Tubig:[/b][/color] touch a frozen teammate and answer [b]1 question[/b] to splash them free ([b]1.5 s[/b] safety + speed burst).
-• [color=#6be38a][b]Huling Hirit:[/b][/color] no teammate can save you (or you're the only [color=#5aa8ff][b]Tubig[/b][/color])? Answer [b]2 hard questions in a row[/b] to thaw yourself.
-
-[font_size=19][b][color=#ffd24d]QUIZ STATIONS[/color][/b][/font_size]
-Stations are in [b]new spots every round[/b]. Stand at one and press [bgcolor=#33405e][color=#ffffff][b] E [/b][/color][/bgcolor] (tap [b]USE[/b] on a phone) to get its question.
-• [color=#8fdcff][b]Halo-Halo coolers[/b][/color] (one in each part of the map, [color=#5aa8ff][b]Tubig[/b][/color] only): [b]Yelo Shield[/b] for 10 s. A [color=#ff6155][b]Sili[/b][/color] who tags you is [b]extinguished[/b] for 5 s instead!
-• [color=#ff6155][b]Bicol Express peppers[/b][/color] (near the middle, [color=#ff6155][b]Sili[/b][/color] only): solve a [b]bugtong[/b] for [b]Extra Anghang[/b] — faster and a wider tag reach for 6 s.
-• [color=#c4f040][b]Kalamansi gates[/b][/color] (anyone): answer to squeeze through the shortcut. Wrong = sour spray, slowed for 3 s.
-• Stations rest after use. They show as squares on the MAPA.
-
-[font_size=19][b][color=#6be38a]ASKING FOR HELP[/color][/b][/font_size]
-• Stuck? Press [bgcolor=#33405e][color=#ffffff][b] ASK A TEAMMATE FOR HELP [/b][/color][/bgcolor] or [bgcolor=#33405e][color=#ffffff][b] H [/b][/color][/bgcolor].
-• Only [b]one [color=#5aa8ff][b]Tubig[/b][/color][/b] can ask at a time.
-• The [b]first free teammate[/b] who says [bgcolor=#33405e][color=#ffffff][b] YES (Y) [/b][/color][/bgcolor] gets your question with a fresh timer — and you are free to run.
-• If you are the only [color=#5aa8ff][b]Tubig[/b][/color], the [color=#ff6155][b]Sili[/b][/color] waits while you answer.
-
-[font_size=19][b][color=#ff6155]SILI[/color][/b][/font_size]
-• Touch [color=#5aa8ff][b]Tubig[/b][/color]s to freeze them.
-• Win by freezing [b]ALL[/b] the [color=#5aa8ff][b]Tubig[/b][/color]s at the same time (catching one is not enough — teammates can save them), or when time runs out.
-• The top bar shows [b]Frozen: 1 / 3[/b] — how many are frozen right now.
-
-[font_size=19][b][color=#ffd24d]PLAYING[/color][/b][/font_size]
-• Press [b]PLAY[/b], then pick a mode.
-• [b]SOLO VS BOT[/b]: you are the [color=#5aa8ff][b]Tubig[/b][/color] in 4 rounds, easy to difficult: [b]1[/b] Easy (1 bot, 6 questions) · [b]2[/b] Medium (1 bot, 8) · [b]3[/b] Hard (2 bots, 8) · [b]4[/b] Labuyo (3 bots, 10). Win to unlock the next round; lose and retry. Harder bots see farther, react faster, cut you off and work as a team. Solo rounds don't count for TOP PLAYERS.
-• [b]LAN[/b]: one player picks [b]HOST GAME[/b]; the others pick [b]JOIN GAME[/b].
-• Everyone must be on the same Wi-Fi or phone hotspot.
-• [b]Leaving[/b] (door button, top right, tap twice): solo — any time. LAN — the host can leave any time, but that [b]ends the game for everyone[/b]; other players can leave once the round is over.
-
-[font_size=19][b][color=#ffd24d]CONTROLS[/color][/b][/font_size]
-[bgcolor=#33405e][color=#ffffff][b] W A S D [/b][/color][/bgcolor] or arrows — move
-[bgcolor=#33405e][color=#ffffff][b] Shift [/b][/color][/bgcolor] or [bgcolor=#33405e][color=#ffffff][b] Space [/b][/color][/bgcolor] — sprint
-[bgcolor=#33405e][color=#ffffff][b] 1 [/b][/color][/bgcolor] [bgcolor=#33405e][color=#ffffff][b] 2 [/b][/color][/bgcolor] [bgcolor=#33405e][color=#ffffff][b] 3 [/b][/color][/bgcolor] [bgcolor=#33405e][color=#ffffff][b] 4 [/b][/color][/bgcolor] — answer
-[bgcolor=#33405e][color=#ffffff][b] H [/b][/color][/bgcolor] — ask for help      [bgcolor=#33405e][color=#ffffff][b] Y [/b][/color][/bgcolor] / [bgcolor=#33405e][color=#ffffff][b] N [/b][/color][/bgcolor] — answer a help request
-[bgcolor=#33405e][color=#ffffff][b] E [/b][/color][/bgcolor] — use a power-up station
-[bgcolor=#33405e][color=#ffffff][b] Esc [/b][/color][/bgcolor] or the pause button — pause (host only)
-[b]On a phone:[/b] drag on the right half of the screen to move, hold [b]RUN[/b] (bottom left) to sprint, tap [b]USE[/b] at a station, tap the answers and buttons. The Back button works like Esc."
+text = "(filled in from data/how_to_play.gd when the game runs)"
 fit_content = true
 scroll_active = false
 

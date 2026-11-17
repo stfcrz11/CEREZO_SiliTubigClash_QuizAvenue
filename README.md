@@ -12,7 +12,7 @@ entry), where I served as tester and support developer.
 | Project information | |
 |---|---|
 | Game title | Sili-Tubig: Task Avenue |
-| Version | **1.1.0** (Android version code 2) — `application/config/version` in `project.godot` |
+| Version | **1.2.0** (Android version code 3) — `application/config/version` in `project.godot` |
 | Theme | Board Games or Brain Games (trivia chase), built on the Filipino street game *sili-tubig* — see `docs/THEME_AND_DESIGN.md` |
 | Platform | Android phones (landscape, touch controls); Windows for development and LAN testing |
 | Engine | Godot 4.7.2-stable, GDScript |
@@ -34,8 +34,10 @@ has a task: "?" scrolls in the maze hold multiple-choice questions about
 Filipino culture (mythology, epics, traditions, dances, games).
 
 - **2–6 players**, each on their own device (same Wi-Fi or hotspot).
-- **Roles:** 2–4 players → 1 Sili, 5–6 players → 2 Silis, everyone else is
-  Tubig. The Sili role rotates every round (Play Again).
+- **Roles:** 2 players → both are Tubig and the host runs a **bot Sili**;
+  3–4 players → 1 Sili; 5–6 players → 2 Silis; everyone else is Tubig. The
+  Sili role rotates every round (Play Again). Before every round a **role
+  reveal + 3-2-1-GO countdown** starts everyone at the same moment.
 - **Tubig team wins** by answering **10 questions correctly** before time
   runs out. Round time: **3:00 for 1 Tubig, 20 s less for each extra Tubig**
   (Tubigs can answer at the same time), never below 1:30.
@@ -47,8 +49,9 @@ Filipino culture (mythology, epics, traditions, dances, games).
 - **Answering:** walking into a scroll opens a question for that Tubig only
   (15 s). While answering, that Tubig **can't move and can't be tagged**; the
   others keep playing, and several Tubigs can answer at the same time.
-  If there is only one Tubig, the whole chase stops and the Sili sees
-  "Tubig is answering, cannot be tagged".
+  If there is only one Tubig, the whole chase stops while they answer.
+  Answers are **A–D** (tap, click, or keys A–D; 1–4 also work). Questions
+  never repeat in a game session (all solo rounds / a whole LAN match).
 - **Asking for help:** the answerer can press **ASK A TEAMMATE FOR HELP (H)**
   once. Only one Tubig can ask at a time. Free teammates get a YES/NO alert;
   the **first YES** gets the question with a fresh timer, and the asker is
@@ -91,6 +94,7 @@ autoloads/
   network.gd          Host / join, LAN discovery, player list, roles
   sound.gd            Music and sound effects (assets/audio/)
 data/
+  how_to_play.gd      HOW TO PLAY text (desktop and phone versions)
   questions.gd        Question lists: 49 general (culture, food, places),
                       16 hard (self-thaw), 14 bugtong riddles (peppers)
   leaderboard.gd      Points and rankings, saved on this device
@@ -108,13 +112,18 @@ scenes/
   player.*            One character (5-direction animations, effects, trails)
   minimap.gd          The MAPA in the corner (your dot, scroll dots)
   question_scroll.*   The "?" pickup
-  quiz_panel.*        4-choice question window with the help button
-  answer_popup.*      TAMA! / MALI! result popup
+  quiz_panel.*        Question card: heading + seconds, question, time bar,
+                      A-D answers (2 x 2), help button, right/wrong marks
+  answer_popup.*      Big TAMA! / MALI! / TIME'S UP! result popup
+  round_intro.*       Role reveal + 3-2-1-GO before every round
+  confirm_modal.*     Reusable "are you sure?" window (LEAVE GAME?)
   help_alert.*        "<name> needs help" YES/NO alert
-  answering_notice.*  "Tubig is answering" notice for the Sili
+  ui_scale.gd         Sizes for every screen: dp, touch targets, safe area
+  pixel_ui.gd         Shared pixel window look (panels, plaques, buttons)
+  touch_scroll.gd     Finger scrolling + wide scrollbar for long windows
   settings_panel.*    Settings window (audio on/off + volume, controls)
 tools/art/           Python scripts that made the character sheets, city
-                     atlas and station props (not used by the game)
+					 atlas and station props (not used by the game)
 ```
 
 **Networking model:** the host is the only one who decides roles, round
@@ -154,16 +163,22 @@ Instances → 2 or more, then Run. Host in one window, join from the others.
 | Move | W A S D or arrow keys |
 | Sprint | Shift or Space (drains stamina) |
 | Use a power-up station | E (phone: USE button, appears next to a station) |
-| Answer | Click / tap a choice, or keys 1–4 |
+| Answer | Click a choice, or keys A B C D (1–4 also work) |
 | Ask a teammate for help | H (or the button) |
 | Accept / refuse a help request | Y / N (or the buttons) |
 | Pause / Resume | Esc or the pause button, top right (host only; pauses everyone). The game also pauses when the phone app goes to the background |
-| Leave the game | Door button, top right (tap twice). Solo: any time. LAN host: any time, ends the game for everyone. LAN players: only after the round is over |
+| Leave the game | Door button, top right → LEAVE GAME? window (STAY / LEAVE; Esc = STAY). Solo: any time (the round pauses while it is open). LAN host: any time, ends the game for everyone. LAN players: only after the round is over |
 | Close a window | Esc |
 | Settings (audio, controls) | Gear button, top right |
-| **Phone:** move | Drag on the right half of the screen (joystick) |
+| **Phone:** move | Drag on the right half of the screen (joystick — phones / touch screens only) |
 | **Phone:** sprint | Hold the RUN button (bottom left) |
+| **Phone:** use a station | Tap USE (appears next to a station) |
+| **Phone:** answer / help | Tap an answer; tap ASK A TEAMMATE FOR HELP; tap YES / NO |
+| **Phone:** leave / pause / settings | Door, pause and gear buttons, top right (48 dp or bigger) |
 | **Phone:** back / close / pause | Android Back button (same as Esc) |
+
+Phones show only touch instructions and desktops only keyboard instructions
+(How to Play, Settings and in-game hints).
 
 ## Completed features
 
@@ -209,7 +224,14 @@ Instances → 2 or more, then Run. Host in one window, join from the others.
 - Settings (gear button, top right of the title screen and the game): music
   and sound effects on/off + volume, controls list; saved on the device
 - Android touch controls: joystick (right half) and RUN button (left), turned on
-  automatically on touch screens (switch in Settings)
+  automatically on touch screens (switch in Settings, shown only on touch devices)
+- **v1.2:** bigger phone UI sized from the real screen (48 dp+ buttons, safe
+  area, larger text); finger scrolling in Credits / How to Play / Leaderboard
+  / Settings; platform-only instructions; new quiz card (A–D, 2 x 2, time bar,
+  check / X feedback); big animated result popup (tap to close); LEAVE GAME?
+  confirmation window; role reveal + synced countdown before every round;
+  no repeated questions in a session; 2 players = both Tubig + a bot Sili;
+  the "Tubig is answering" notice was removed
 
 ## Tested (Godot 4.7.2, several game instances on one PC over ENet)
 
@@ -255,6 +277,26 @@ Instances → 2 or more, then Run. Host in one window, join from the others.
 - How to Play did not fit the screen → scrollable window.
 - Import errors from an old, deleted lobby scene and leftover cache files →
   removed.
+
+- (v1.2) Credits / How to Play could not be scrolled with a finger on a
+  phone. Cause: the RichTextLabel / PanelContainer inside the scroll caught
+  the touch (mouse_filter STOP). Fix: `scenes/touch_scroll.gd` lets the drag
+  through, adds a wide scrollbar and handles raw touch drags. Result: a
+  simulated finger drag scrolls both to the very bottom (test U-01 / U-05).
+- (v1.2) The joystick switch and overlay could show on a desktop from a saved
+  phone setting. Fix: `GameState.touch_controls_on()` = touch device AND the
+  setting. Result: no joystick row on desktop (test U-06).
+- (v1.2) Answering with A or D could make the player walk when the question
+  closed (A/D are movement keys). Fix: movement is ignored until the keys are
+  let go (`GameState.move_input()`). Result: test V-08.
+- (v1.2) New windows came out taller than the screen. Cause: wrapped text was
+  measured before Godot knew its width, and a hand-set size never shrank
+  back. Fix: windows are centred by containers anchored to the safe area, and
+  wrapped labels get their width first. Result: every window fits at
+  2400x1080, 1920x1080 and 1024x768.
+- (v1.2) The round label in the top bar overlapped "Frozen" and the leave
+  button. Cause: its offsets count from the right edge but were set from the
+  left. Fix: corrected, and the label hides when there is no room.
 
 See `PROJECT_STATE.md` for the full list (cause, fix and result of each).
 

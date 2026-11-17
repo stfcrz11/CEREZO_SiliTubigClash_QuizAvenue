@@ -59,7 +59,16 @@ func _refresh_players() -> void:
 	count_label.text = "%d / %d" % [n, Network.MAX_PLAYERS]
 	sili_chip.text = "%d SILI" % silis
 	tubig_chip.text = "%d TUBIG" % max(n - silis, 0)
+	if n == 2:
+		sili_chip.text = "BOT SILI"   # 2 players: both Tubig, a bot Sili chases them
 	_players_updated(n)
+	var note := "A bot Sili will join this round."
+	if n == 2 and not status.text.contains(note):
+		status.text += ("
+" if not status.text.is_empty() else "") + note
+	elif n != 2 and status.text.contains(note):
+		status.text = status.text.replace("
+" + note, "").replace(note, "")
 
 
 func _players_updated(_count: int) -> void:

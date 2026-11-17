@@ -8,6 +8,10 @@ extends Control
 ## They press the same input actions as the keyboard (move_left/right/up/
 ## down, sprint), so player.gd needs no changes.
 ## They only work while you can move (round playing, no window open).
+## Only on touch devices (GameState.touch_controls_on()): never on desktop.
+## Sizes follow scenes/ui_scale.gd and stay inside the phone's safe area.
+
+const UiScale := preload("res://scenes/ui_scale.gd")
 
 @export var joystick_radius: float = 70.0
 @export var knob_radius: float = 30.0
@@ -35,23 +39,32 @@ var _blocked_until := 0         # msec: ignore new touches until then
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	visible = GameState.touch_controls
+	visible = GameState.touch_controls_on()
 	GameState.touch_controls_changed.connect(func():
-		visible = GameState.touch_controls
+		visible = GameState.touch_controls_on()
 		if not visible:
 			_release_all())
 
 
+## Bigger on phones: everything is scaled from a 48 dp touch target.
+func _k() -> float:
+	return UiScale.touch_target(get_viewport(), 64.0) / 64.0
+
+
+func _inset(side: String) -> float:
+	return UiScale.safe_insets(get_viewport())[side]
+
+
 func _stick_home() -> Vector2:
-	return Vector2(size.x - 130, size.y - 130)
+	return Vector2(size.x - 130 * _k() - _inset("right"), size.y - 130 * _k() - _inset("bottom"))
 
 
 func _run_center() -> Vector2:
-	return Vector2(110, size.y - 120)
+	return Vector2(110 * _k() + _inset("left"), size.y - 120 * _k() - _inset("bottom"))
 
 
 func _use_center() -> Vector2:
-	return Vector2(110, size.y - 250)
+	return Vector2(110 * _k() + _inset("left"), size.y - 250 * _k() - _inset("bottom"))
 
 
 func _is_excluded(pos: Vector2) -> bool:
@@ -82,12 +95,12 @@ func _input(event: InputEvent) -> void:
 		if event.pressed and Time.get_ticks_msec() < _blocked_until:
 			return
 		if event.pressed:
-			if use_available and event.position.distance_to(_use_center()) <= run_radius * 1.3:
+			if use_available and event.position.distance_to(_use_center()) <= run_radius * _k() * 1.3:
 				# a tap = one key press of "interact"
 				Input.action_press("interact")
 				_release_use.call_deferred()
 				get_viewport().set_input_as_handled()
-			elif _run_touch == -1 and event.position.distance_to(_run_center()) <= run_radius * 1.4:
+			elif _run_touch == -1 and event.position.distance_to(_run_center()) <= run_radius * _k() * 1.4:
 				_run_touch = event.index
 				Input.action_press("sprint")
 				get_viewport().set_input_as_handled()
@@ -113,7 +126,7 @@ func _release_use() -> void:
 
 
 func _move_stick(pos: Vector2) -> void:
-	_stick_vec = (pos - _stick_center) / joystick_radius
+	_stick_vec = (pos - _stick_center) / (joystick_radius * _k())
 	if _stick_vec.length() > 1.0:
 		_stick_vec = _stick_vec.normalized()
 	_set_action("move_left", -_stick_vec.x)
@@ -146,21 +159,25 @@ func _release_all() -> void:
 func _draw() -> void:
 	if not _active():
 		return
+	var k := _k()
+	var jr := joystick_radius * k
+	var rr := run_radius * k
+	var fs := int(20 * k)
 	var c := _stick_center if _stick_touch != -1 else _stick_home()
-	draw_circle(c, joystick_radius, base_color)
-	draw_arc(c, joystick_radius, 0, TAU, 48, Color(1, 1, 1, 0.35), 2.0)
-	draw_circle(c + _stick_vec * joystick_radius, knob_radius, knob_color)
+	draw_circle(c, jr, base_color)
+	draw_arc(c, jr, 0, TAU, 48, Color(1, 1, 1, 0.35), 2.0)
+	draw_circle(c + _stick_vec * jr, knob_radius * k, knob_color)
 	var r := _run_center()
 	var col := run_color.lightened(0.3) if _run_touch != -1 else run_color
-	draw_circle(r, run_radius, col)
-	draw_arc(r, run_radius, 0, TAU, 48, Color(1, 1, 1, 0.6), 3.0)
+	draw_circle(r, rr, col)
+	draw_arc(r, rr, 0, TAU, 48, Color(1, 1, 1, 0.6), 3.0)
 	var font := ThemeDB.fallback_font
-	var w := font.get_string_size("RUN", HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
-	draw_string(font, r + Vector2(-w / 2.0, 7), "RUN", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
+	var w := font.get_string_size("RUN", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	draw_string(font, r + Vector2(-w / 2.0, fs * 0.35), "RUN", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color.WHITE)
 	if use_available:
 		var u := _use_center()
 		var pulse := 0.85 + 0.15 * sin(Time.get_ticks_msec() / 150.0)
-		draw_circle(u, run_radius * pulse, use_color)
-		draw_arc(u, run_radius * pulse, 0, TAU, 48, Color(1, 1, 1, 0.8), 3.0)
-		var uw := font.get_string_size("USE", HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
-		draw_string(font, u + Vector2(-uw / 2.0, 7), "USE", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.15, 0.1, 0.05))
+		draw_circle(u, rr * pulse, use_color)
+		draw_arc(u, rr * pulse, 0, TAU, 48, Color(1, 1, 1, 0.8), 3.0)
+		var uw := font.get_string_size("USE", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		draw_string(font, u + Vector2(-uw / 2.0, fs * 0.35), "USE", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.15, 0.1, 0.05))

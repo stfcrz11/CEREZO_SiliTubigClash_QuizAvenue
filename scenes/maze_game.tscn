@@ -6,7 +6,8 @@
 [ext_resource type="PackedScene" uid="uid://bdbmfdn2jastq" path="res://scenes/city_map.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/answer_popup.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/help_alert.tscn" id="6"]
-[ext_resource type="PackedScene" path="res://scenes/answering_notice.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/round_intro.tscn" id="intro_tscn"]
+[ext_resource type="PackedScene" path="res://scenes/confirm_modal.tscn" id="modal_tscn"]
 [ext_resource type="Script" path="res://scenes/png_button.gd" id="8"]
 [ext_resource type="Texture2D" path="res://assets/ui/button_settings.png" id="9"]
 [ext_resource type="Texture2D" path="res://assets/ui/button_pause.png" id="pause_png"]
@@ -271,13 +272,12 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("11")
 
+[node name="RoundIntro" parent="HUD" instance=ExtResource("intro_tscn")]
+
 [node name="QuizPanel" parent="HUD" unique_id=1232063149 instance=ExtResource("2")]
 visible = false
 
 [node name="AnswerPopup" parent="HUD" instance=ExtResource("5")]
-visible = false
-
-[node name="AnsweringNotice" parent="HUD" instance=ExtResource("7")]
 visible = false
 
 [node name="HelpAlert" parent="HUD" instance=ExtResource("6")]
@@ -341,3 +341,5 @@ text = "Main Menu"
 visible = false
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=673616158]
+
+[node name="LeaveModal" parent="HUD" instance=ExtResource("modal_tscn")]

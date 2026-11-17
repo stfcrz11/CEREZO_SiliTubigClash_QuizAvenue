@@ -12,6 +12,7 @@ var local_player: Node2D
 var camera: Camera2D
 var scrolls: Dictionary = {}        # the game's scroll list (id -> scroll node), shared
 var stations: Array = []            # the game's quiz stations (coolers, peppers, gates), shared
+var label_size: int = 10            # the "MAPA" title (maze_game sets it bigger on phones)
 
 const BUILDING_COLOR := Color(0.62, 0.3, 0.24)
 const ROAD_COLOR := Color(0.3, 0.31, 0.34)
@@ -64,7 +65,7 @@ func _draw() -> void:
 	var map_rect := Rect2(origin, map_size)
 
 	draw_style_box(_panel_style(), Rect2(Vector2.ZERO, size))
-	draw_string(ThemeDB.fallback_font, Vector2(10.0, 13.0), "MAPA", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 10, Color(1.0, 0.9, 0.55))
+	draw_string(ThemeDB.fallback_font, Vector2(10.0, 4.0 + label_size), "MAPA", HORIZONTAL_ALIGNMENT_LEFT, -1.0, label_size, Color(1.0, 0.9, 0.55))
 	for y in rows:
 		for x in columns:
 			var cell_rect: Rect2 = Rect2(origin + Vector2(x, y) * cell_size, Vector2.ONE * cell_size)

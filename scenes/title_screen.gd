@@ -13,6 +13,9 @@ extends Control
 ## script copies it for every player, so edit it to change every row.
 
 const Leaderboard := preload("res://data/leaderboard.gd")
+const HowToPlay := preload("res://data/how_to_play.gd")
+const TouchScroll := preload("res://scenes/touch_scroll.gd")
+const UiScale := preload("res://scenes/ui_scale.gd")
 const MAX_ROWS := 20
 const RANK_COLORS := [Color(1, 0.82, 0.3), Color(0.8, 0.84, 0.9), Color(0.85, 0.55, 0.3)]   # gold, silver, bronze
 
@@ -33,6 +36,12 @@ func _ready() -> void:
 	$CreditsPanel/Margin/VBox/CloseButton.pressed.connect(_show_credits.bind(false))
 	$CreditsDim.gui_input.connect(func(e): if e is InputEventMouseButton and e.pressed: _show_credits(false))
 	$VersionLabel.text = "v%s" % ProjectSettings.get_setting("application/config/version", "1.0")
+	# finger scrolling + a wide scrollbar for the long windows
+	for scroll in [$HowToPanel/Margin/VBox/Scroll, $CreditsPanel/Margin/VBox/Scroll, $Leaderboard/Margin/VBox/Scroll]:
+		TouchScroll.setup(scroll)
+	get_viewport().size_changed.connect(_apply_layout)
+	_apply_layout()
+	GameState.reset_question_decks()   # back on the title screen = a new game session
 	$HowToPanel/Margin/VBox/CloseButton.pressed.connect(_show_how_to.bind(false))
 	$Menu/LeaderboardButton.pressed.connect(_show_leaderboard.bind(true))
 	$Leaderboard/Margin/VBox/Header/CloseButton.pressed.connect(_show_leaderboard.bind(false))
@@ -126,6 +135,43 @@ func _fill_leaderboard() -> void:
 			row.get_node("HBox/Name").add_theme_color_override("font_color", Color(1, 0.88, 0.35))   # you
 		row.tooltip_text = "%s — %d games, %d wins, %d points" % [r["name"], r["games"], r["wins"], r["points"]]
 		rows.add_child(row)
+
+
+## Window sizes and text sizes for this screen (bigger on phones, inside
+## the safe area). Runs again when the window is resized or rotated.
+func _apply_layout() -> void:
+	var vp := get_viewport()
+	var mobile := GameState.is_mobile_ui()
+	_fit($HowToPanel, UiScale.modal_size(vp, Vector2(0.9, 0.92), Vector2(660, 500)))
+	_fit($CreditsPanel, UiScale.modal_size(vp, Vector2(0.9, 0.92), Vector2(680, 540)))
+	_fit($Leaderboard, UiScale.modal_size(vp, Vector2(0.62, 0.92), Vector2(360, 490)))
+	var body := UiScale.font(vp, 15)
+	var rules: RichTextLabel = $HowToPanel/Margin/VBox/Scroll/Rules
+	for key in ["normal_font_size", "bold_font_size", "italics_font_size"]:
+		rules.add_theme_font_size_override(key, body)
+	rules.custom_minimum_size.x = 0
+	rules.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rules.text = HowToPlay.text(mobile, UiScale.font(vp, 19))
+	$HowToPanel/Margin/VBox/Scroll.custom_minimum_size = Vector2(0, 0)
+	$HowToPanel/Margin/VBox/Scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var credits: RichTextLabel = $CreditsPanel/Margin/VBox/Scroll/Text
+	for key in ["normal_font_size", "bold_font_size"]:
+		credits.add_theme_font_size_override(key, body)
+	for header in [$HowToPanel/Margin/VBox/Header, $CreditsPanel/Margin/VBox/Header]:
+		header.add_theme_font_size_override("font_size", UiScale.font(vp, 28))
+	var k := UiScale.touch_target(vp, 50.0) / 50.0
+	for close in [$HowToPanel/Margin/VBox/CloseButton, $CreditsPanel/Margin/VBox/CloseButton]:
+		close.custom_minimum_size = Vector2(200, 50) * k
+	$Menu/ErrorLabel.add_theme_font_size_override("font_size", UiScale.font(vp, 15))
+	$VersionLabel.add_theme_font_size_override("font_size", UiScale.font(vp, 14))
+
+
+## Centre a window with the given size.
+func _fit(panel: Control, size: Vector2) -> void:
+	panel.offset_left = -size.x / 2.0
+	panel.offset_right = size.x / 2.0
+	panel.offset_top = -size.y / 2.0
+	panel.offset_bottom = size.y / 2.0
 
 
 func _show_credits(open: bool) -> void:

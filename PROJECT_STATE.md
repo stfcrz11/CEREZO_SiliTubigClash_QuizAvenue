@@ -8,6 +8,19 @@ Everything below comes from the actual files in this folder: `.gd`, `.tscn`,
 `project.godot`, `README.md` and `assets/`. Anything I could not confirm from the files is
 marked **[CHECK]**.
 
+> **v1.2.0 (2026-11-17).** Phone-tested update: one mobile/desktop switch
+> (`GameState.is_mobile_ui()`, env `SILITUBIG_MOBILE_UI` for tests), UI sizes
+> from `scenes/ui_scale.gd`, shared pixel look `scenes/pixel_ui.gd` + pixel font
+> (`assets/fonts/pixel5x7.fnt`). Finger scrolling (`scenes/touch_scroll.gd`),
+> joystick only on touch devices, platform-only instructions
+> (`data/how_to_play.gd`), bigger phone HUD. New quiz card (A–D, 2 x 2, time bar,
+> check/X), big result popup (host waits until it closes), LEAVE GAME? window
+> (`scenes/confirm_modal.*`), role reveal + host-synced countdown
+> (`scenes/round_intro.*`, slow devices dropped after 12 s), no repeated
+> questions per session, 2 players = both Tubig + host-run bot Sili. The
+> answering notice was deleted. Tests: `tools/tests/test_v12.gd`,
+> `test_ui12.gd`, `test_lan12.gd`, `check_questions.py`.
+>
 > **v1.1.0 (2026-11-10, second update).** Pixel-art title screen and windows
 > (`tools/art/make_ui.py`, `make_title_bg.py`, `scenes/title_runners.gd`), CREDITS
 > window, version label. Power-up stations now stand on road cells at random spots

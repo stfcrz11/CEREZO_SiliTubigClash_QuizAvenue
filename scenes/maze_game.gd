@@ -6,7 +6,9 @@ extends Node2D
 ## SOLO VS BOT: you are the only Tubig and 1-3 computer Silis (bot_sili.gd)
 ## chase you, over 4 rounds from easy to difficult (Network.SOLO_ROUNDS).
 ## Bot rounds don't go on the leaderboard.
-## Round states: READY -> PLAYING <-> PAUSED, PLAYING <-> QUESTION, -> ENDED.
+## Round states: READY (loading + role reveal / countdown) -> PLAYING <-> PAUSED,
+## PLAYING <-> QUESTION, -> ENDED.
+## 2 human players over LAN: both are Tubig and the host runs a bot Sili.
 ##
 ## Quizzes control freezing, rescuing and power-ups (every one of them is a
 ## "question" with a kind — see KINDS):
@@ -34,6 +36,8 @@ const PLAYER_SCENE := preload("res://scenes/player.tscn")
 const SCROLL_SCENE := preload("res://scenes/question_scroll.tscn")
 const ButtonStyle := preload("res://scenes/ui_button_style.gd")
 const BotSili := preload("res://scenes/bot_sili.gd")
+const UiScale := preload("res://scenes/ui_scale.gd")
+const RoundIntro := preload("res://scenes/round_intro.gd")
 const COOLER_TEXTURE := preload("res://assets/props/cooler_stalls.png")
 const PEPPER_TEXTURE := preload("res://assets/props/bicol_pepper.png")
 
@@ -104,7 +108,8 @@ const STALL_NAMES := ["Halo-Halo", "Mais Con Yelo", "Sago't Gulaman", "Buko Pand
 @onready var quiz_panel: Control = $HUD/QuizPanel
 @onready var answer_popup: Control = $HUD/AnswerPopup
 @onready var help_alert: Control = $HUD/HelpAlert
-@onready var answering_notice: Control = $HUD/AnsweringNotice
+@onready var round_intro: Control = $HUD/RoundIntro       # role reveal + 3-2-1-GO before each round
+@onready var leave_modal: Control = $HUD/LeaveModal       # "LEAVE GAME?" confirmation
 @onready var end_panel: Control = $HUD/EndPanel
 @onready var play_again_button: Button = $HUD/EndPanel/Margin/VBox/Buttons/PlayAgainButton
 @onready var menu_button: Button = $HUD/EndPanel/Margin/VBox/Buttons/MenuButton
@@ -135,14 +140,16 @@ var _maze_cell_offset := Vector2i.ZERO   # maze grid (0,0) = this Maze layer cel
 var _interact_cooldown: float = 0.0  # local: don't send a station request every frame
 var _effect_label: Label
 var _fps_label: Label
-var _leave_armed_until: int = 0   # msec: a 2nd tap on LEAVE before this leaves
+var _paused_for_leave: bool = false   # solo: the leave window paused the round
+var _intro_go_at: float = -1.0       # host: seconds left until GO (-1 = not counting)
+var _intro_seconds: float = 0.0      # host: the round length to start on GO
+var _ready_wait: float = 0.0         # host: seconds spent waiting for slow devices
 var _fps_timer: float = 0.0
 var _solo_won: bool = false
 
 # host-only bookkeeping
 var _begun: bool = false
 var _next_scroll_id: int = 0
-var _decks: Dictionary = {}         # question list name -> shuffled indexes left
 var _questions: Dictionary = {}     # open questions (host): qid -> info
 var _help_active: int = -1          # host: the ONE question with an open help request
 var _stats: Dictionary = {}         # host: peer id -> {correct, tags, rescues} this round
@@ -171,9 +178,11 @@ func _ready() -> void:
 	$HUD/TopBar/SettingsButton.pressed.connect(func(): $HUD/SettingsPanel.open())
 	$HUD/TopBar/PauseButton.pressed.connect(_toggle_pause)
 	$HUD/TopBar/LeaveButton.pressed.connect(_on_leave_pressed)
+	answer_popup.dismissed.connect(_on_popup_dismissed)
 	# phone joystick + RUN button: off while a window covers the game
 	$HUD/TouchControls.is_blocked = func(): return quiz_panel.visible or answer_popup.visible \
-		or end_panel.visible or pause_label.visible or $HUD/SettingsPanel.visible
+		or end_panel.visible or pause_label.visible or $HUD/SettingsPanel.visible \
+		or leave_modal.is_open() or round_intro.is_open()
 	$HUD/TouchControls.excluded_rects = func():
 		return [$HUD/HelpAlert/Panel.get_global_rect()] if help_alert.visible else []
 	help_alert.answered.connect(_on_help_answer)
@@ -193,6 +202,10 @@ func _ready() -> void:
 	_add_vignette()
 	_add_effect_label()
 	_add_fps_label()
+	pause_label.text = "PAUSED — tap the pause button to resume" if GameState.is_mobile_ui() \
+		else "PAUSED — press Esc or the pause button to resume"
+	get_viewport().size_changed.connect(_apply_ui_scale)
+	_apply_ui_scale()
 	if not Network.online:
 		mode_label.text = "Solo"
 	else:
@@ -291,6 +304,69 @@ func _add_effect_label() -> void:
 	$HUD.move_child(_effect_label, $HUD/MessageLabel.get_index())
 
 
+## Top bar, buttons and HUD text sizes (bigger on phones, inside the safe
+## area). Runs again when the window is resized or rotated.
+func _apply_ui_scale() -> void:
+	var vp := get_viewport()
+	var mobile := GameState.is_mobile_ui()
+	var inset := UiScale.safe_insets(vp)
+	var button := UiScale.touch_target(vp, 32.0)
+	var gap := 14.0 if mobile else 8.0
+	var bar_h := button + (12.0 if mobile else 6.0)
+	var bar: Control = $HUD/TopBar
+	bar.offset_bottom = bar_h + inset["top"]
+	# the three icon buttons, right to left: settings, pause, leave
+	var x: float = -inset["right"] - 12.0
+	for b in [$HUD/TopBar/SettingsButton, $HUD/TopBar/PauseButton, $HUD/TopBar/LeaveButton]:
+		b.offset_right = x
+		b.offset_left = x - button
+		b.offset_top = inset["top"] + (bar_h - button) / 2.0
+		b.offset_bottom = b.offset_top + button
+		x -= button + gap
+	var font := UiScale.font(vp, 18)
+	var lx: float = inset["left"] + 16.0
+	for l in [score_label, timer_label, frozen_label]:
+		l.add_theme_font_size_override("font_size", font)
+		l.offset_left = lx
+		l.offset_top = inset["top"] + (bar_h - font * 1.4) / 2.0
+		l.offset_bottom = l.offset_top + font * 1.4
+		l.offset_right = lx + font * (11.0 if l == score_label else 8.5)
+		lx = l.offset_right + font * 0.6
+	mode_label.add_theme_font_size_override("font_size", UiScale.font(vp, 14))
+	# the round label sits between the counters and the buttons (its offsets
+	# count from the right edge); hidden when there's no room for it
+	var vw := vp.get_visible_rect().size.x
+	mode_label.offset_right = x + gap - 8.0
+	mode_label.offset_left = maxf(lx - vw, mode_label.offset_right - 360.0)
+	mode_label.visible = mode_label.offset_right - mode_label.offset_left >= 110.0
+	mode_label.clip_text = true
+	mode_label.offset_top = inset["top"] + (bar_h - 24.0) / 2.0
+	mode_label.offset_bottom = mode_label.offset_top + 24.0
+	# minimap under the bar, a bit bigger on phones
+	var mm_scale := 1.35 if mobile else 1.0
+	minimap.offset_right = -inset["right"] - 20.0
+	minimap.offset_left = minimap.offset_right - 192.0 * mm_scale
+	minimap.offset_top = bar.offset_bottom + 8.0
+	minimap.offset_bottom = minimap.offset_top + 158.0 * mm_scale
+	minimap.label_size = UiScale.font(vp, 11)
+	message_label.add_theme_font_size_override("font_size", UiScale.font(vp, 20))
+	warning_label.add_theme_font_size_override("font_size", UiScale.font(vp, 20))
+	warning_label.offset_top = inset["top"] + 4.0
+	pause_label.add_theme_font_size_override("font_size", UiScale.font(vp, 28))
+	pause_label.offset_left = -vp.get_visible_rect().size.x * 0.45
+	pause_label.offset_right = vp.get_visible_rect().size.x * 0.45
+	pause_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_effect_label.position = Vector2(inset["left"] + 16.0, bar.offset_bottom + 6.0)
+	_effect_label.add_theme_font_size_override("font_size", UiScale.font(vp, 16))
+	for l in [$HUD/EndPanel/Margin/VBox/StatsLabel]:
+		l.add_theme_font_size_override("font_size", UiScale.font(vp, 17))
+	$HUD/EndPanel/Margin/VBox/ResultLabel.add_theme_font_size_override("font_size", UiScale.font(vp, 30))
+	for b in [play_again_button, menu_button]:
+		b.custom_minimum_size = Vector2(150.0 * (1.3 if mobile else 1.0), UiScale.touch_target(vp, 44.0))
+		b.add_theme_font_size_override("font_size", UiScale.font(vp, 16))
+	help_alert.apply_ui_scale()
+
+
 func _add_fps_label() -> void:
 	# Settings -> Show FPS: live numbers for performance testing
 	_fps_label = Label.new()
@@ -379,7 +455,7 @@ func _host_try_begin() -> void:
 	if _begun or not Network.everyone_ready():
 		return
 	_begun = true
-	var roles := Network.assign_roles()   # 2-4 players: 1 Sili, 5-6: 2 Silis; solo: 1-3 bots
+	var roles := Network.assign_roles()   # 3-4: 1 Sili, 5-6: 2 Silis; 2 humans: both Tubig; solo: 1-3 bots
 	var tubig_starts := _cells_with("P")
 	var sili_starts := _cells_with("S")
 	var roster := []
@@ -393,14 +469,51 @@ func _host_try_begin() -> void:
 		else:
 			start = sili_starts[sili_n] if sili_n < sili_starts.size() else _far_cell_from(tubig_starts[0])
 			sili_n += 1
-		roster.append([id, Network.slot_of(id), roles[id], start])
+		roster.append([id, Network.slot_of(id), roles[id], start, Network.player_name_of(id)])
 		_stats[id] = {"correct": 0, "tags": 0, "rescues": 0}
+	if Network.needs_lan_bot():
+		# 2 humans: both are Tubig, and the host runs a bot Sili (not a player:
+		# no lobby slot, no leaderboard). Change its level in bot_sili.gd TUNING.
+		var bot_id: int = Network.BOT_IDS[0]
+		roster.append([bot_id, Network.MAX_PLAYERS, "sili", sili_starts[0], Network.BOT_NAMES[0]])
+		_stats[bot_id] = {"correct": 0, "tags": 0, "rescues": 0}
 	_spawn_all.rpc(roster)
 	_setup_stations.rpc(_host_place_stations())
 	for i in scrolls_on_map:
 		_host_spawn_scroll()
-	_start_round.rpc(_round_seconds(tubig_n))
-	round_timer.start()
+	# role reveal + countdown on every device; the round starts on the host's GO
+	_intro_seconds = _round_seconds(tubig_n)
+	_show_intro.rpc(_intro_seconds)
+	_intro_go_at = RoundIntro.TOTAL_TIME
+
+
+## Every device: the role reveal and countdown (state stays READY: nobody
+## moves, tags or opens questions; the round clock shows the full time).
+@rpc("authority", "call_local", "reliable")
+func _show_intro(seconds: float) -> void:
+	time_left = seconds
+	_update_hud()
+	message_label.text = ""
+	var me = player_by_id.get(multiplayer.get_unique_id())
+	if me == null:
+		return
+	var sili_names: PackedStringArray = []
+	var tubig_names: PackedStringArray = []
+	for p in player_by_id.values():
+		var n := Network.player_name_of(p.peer_id)
+		if p.is_tubig():
+			tubig_names.append(n)
+		else:
+			sili_names.append(n)
+	var goal := "Answer %d questions before time runs out. Don't get frozen!" % questions_to_win if me.is_tubig() \
+		else "Freeze all the Tubigs before time runs out!"
+	var round_line := ""
+	if Network.solo_bot:
+		var info := Network.solo_round_info()
+		round_line = "%s vs %d bot%s" % [info["name"].replace(" - ", " – "), info["bots"], "" if info["bots"] == 1 else "s"]
+	round_intro.open({"role": "tubig" if me.is_tubig() else "sili", "goal": goal, "round": round_line,
+		"roster": "Sili%s: %s   ·   Tubig%s: %s" % ["s" if sili_names.size() != 1 else "", ", ".join(sili_names),
+			"s" if tubig_names.size() != 1 else "", ", ".join(tubig_names)]})
 
 
 func _far_cell_from(from: Vector2i) -> Vector2i:
@@ -430,6 +543,8 @@ func _spawn_all(roster: Array) -> void:
 		var slot: int = entry[1]
 		var role: String = entry[2]
 		var start: Vector2i = entry[3]
+		if entry.size() > 4 and not Network.player_names.has(id):
+			Network.player_names[id] = entry[4]   # the LAN bot's name, on every device
 		var p := PLAYER_SCENE.instantiate()
 		p.name = "Player_%d" % id          # identical node path on every device
 		actors_root.add_child(p)
@@ -444,7 +559,8 @@ func _spawn_all(roster: Array) -> void:
 			var bot := BotSili.new()
 			bot.name = "BotSili_%d" % id
 			add_child(bot)
-			bot.setup(self, p, Network.solo_round_info()["difficulty"], bot_index)
+			# solo: the round's level; LAN (2 players): "medium" (see bot_sili.gd TUNING)
+			bot.setup(self, p, Network.solo_round_info()["difficulty"] if Network.solo_bot else "medium", bot_index)
 			_bots[id] = bot
 			bot_index += 1
 	var me = player_by_id.get(multiplayer.get_unique_id())
@@ -453,6 +569,8 @@ func _spawn_all(roster: Array) -> void:
 		if Network.solo_bot:
 			var info := Network.solo_round_info()
 			mode_label.text = "%s  vs  %d bot%s" % [info["name"], info["bots"], "" if info["bots"] == 1 else "s"]
+		elif Network.needs_lan_bot():
+			mode_label.text += "  ·  vs %s" % Network.BOT_NAMES[0]
 		minimap.set_local_player(me)
 		local_player = me
 		_follow_local_player()
@@ -461,6 +579,7 @@ func _spawn_all(roster: Array) -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _start_round(seconds: float) -> void:
+	round_intro.go()
 	Sound.play("start")
 	time_left = seconds
 	correct_answers = 0
@@ -470,14 +589,10 @@ func _start_round(seconds: float) -> void:
 	var clock := "  (%s for %d Tubig%s)" % [_format_time(seconds), tubigs.size(), "" if tubigs.size() == 1 else "s"]
 	if silis.is_empty():
 		_show_message("Test mode: no Sili (needs 2+ players over LAN).", 4.0)
-	elif Network.solo_bot:
-		var info := Network.solo_round_info()
-		_show_message("%s: run from %d Siling Labuyo bot%s! Answer %d questions!%s" % [info["name"].to_upper(),
-			info["bots"], "" if info["bots"] == 1 else "s", questions_to_win, clock], 6.0)
 	elif me and not me.is_tubig():
-		_show_message("You are SILI! Freeze ALL Tubig before they answer %d questions! Bicol Express peppers = turbo.%s" % [questions_to_win, clock], 6.0)
+		_show_message("Freeze ALL the Tubigs! Bicol Express peppers = turbo.%s" % clock, 4.0)
 	else:
-		_show_message("You are TUBIG! Find ? scrolls and answer %d questions! Coolers = Yelo Shield.%s" % [questions_to_win, clock], 6.0)
+		_show_message("Find ? scrolls and answer %d questions! Coolers = Yelo Shield.%s" % [questions_to_win, clock], 4.0)
 
 
 # ============================================================= scrolls
@@ -732,7 +847,7 @@ func _check_local_interact(delta: float) -> void:
 	if not is_instance_valid(me) or GameState.round_state != GameState.RoundState.PLAYING:
 		touch.use_available = false
 		return
-	var key := "tap USE" if GameState.touch_controls else "press E"
+	var key := "tap USE" if GameState.is_mobile_ui() else "press E"
 	var reach := _station_in_reach(me) if not (me.frozen or me.answering or me.stun_time > 0.0) else -1
 	for st in stations:
 		var near: bool = me.global_position.distance_to(cell_to_world(st["cell"])) < 75.0
@@ -838,13 +953,10 @@ func _pool(name: String) -> Array:
 	return QuestionBank.QUESTIONS
 
 
+## Never the same question twice in a game session (GameState keeps the
+## used list across solo rounds, retries and LAN Play Again).
 func _host_next_question_index(pool: String) -> int:
-	var deck: Array = _decks.get(pool, [])
-	if deck.is_empty():
-		deck = range(_pool(pool).size())
-		deck.shuffle()
-		_decks[pool] = deck
-	return deck.pop_back()
+	return GameState.next_question_index(pool, _pool(pool).size())
 
 
 func _kind_time(kind: String) -> float:
@@ -906,16 +1018,14 @@ func _open_question(qid: int, kind: String, scroll_id: int, picker_id: int, pool
 		_help_queue.clear()   # busy answering: no help alerts for me now
 		_help_showing = -1
 		help_alert.close()
-		quiz_panel.show_question(entry, order, _question_header(kind, picker_name, asked, extra),
-			true, picker_name, kind == "scroll" and not full_stop, _kind_time(kind))
+		quiz_panel.show_question(entry, order, _question_tab(kind, extra),
+			true, picker_name, kind == "scroll" and not full_stop, _kind_time(kind),
+			_question_header(kind, picker_name, asked, extra))
 		if help_locked_by != 0 and kind == "scroll":
 			quiz_panel.set_help_locked(true, Network.player_name_of(help_locked_by))
 		return
-	var me = player_by_id.get(multiplayer.get_unique_id())
 	if full_stop:
-		if me and not me.is_tubig():
-			answering_notice.open()
-		return
+		return   # the whole chase is paused while the only Tubig answers
 	match kind:
 		"scroll":
 			_show_message("%s is answering a question — can't be tagged!" % picker_name, 3.0)
@@ -927,19 +1037,36 @@ func _open_question(qid: int, kind: String, scroll_id: int, picker_id: int, pool
 			_show_message("%s is solving a bugtong for EXTRA ANGHANG!" % picker_name, 3.0)
 
 
+## The quiz window's title tab.
+func _question_tab(kind: String, extra: Dictionary) -> String:
+	match kind:
+		"rescue":
+			return "BUHOS-TUBIG"
+		"thaw":
+			return "HULING HIRIT %d/2" % extra.get("step", 1)
+		"shield":
+			return stations[extra["station"]]["name"].replace(" cooler", "").to_upper()
+		"turbo":
+			return "BUGTONG"
+		"gate":
+			return "KALAMANSI GATE"
+	return "QUIZ"
+
+
+## The small line under the title tab.
 func _question_header(kind: String, picker_name: String, asked: int, extra: Dictionary) -> String:
 	match kind:
 		"rescue":
-			return "BUHOS-TUBIG!  Answer to splash %s free" % Network.player_name_of(extra.get("target", 0))
+			return "Answer to splash %s free!" % Network.player_name_of(extra.get("target", 0))
 		"thaw":
-			return "HULING HIRIT  %d / 2  —  answer 2 in a row to thaw yourself!" % extra.get("step", 1)
+			return "Answer 2 in a row to thaw yourself!"
 		"shield":
-			return "%s  —  answer for a %d s YELO SHIELD!" % [stations[extra["station"]]["name"].to_upper(), int(shield_time)]
+			return "Answer for a %d s YELO SHIELD!" % int(shield_time)
 		"turbo":
-			return "BICOL EXPRESS  —  solve the bugtong for EXTRA ANGHANG!"
+			return "Solve the bugtong for EXTRA ANGHANG!"
 		"gate":
-			return "KALAMANSI GATE  —  answer to squeeze through (wrong = sour spray!)"
-	return "Scroll #%d  —  picked by %s  —  Correct: %d / %d" % [asked, picker_name, correct_answers, questions_to_win]
+			return "Answer to squeeze through (wrong = sour spray!)"
+	return "Scroll %d  ·  Correct %d / %d" % [asked, correct_answers, questions_to_win]
 
 
 func _on_local_choice(position: int) -> void:
@@ -977,6 +1104,10 @@ func _host_resolve(qid: int, position: int) -> void:
 		total += 1
 	_question_result.rpc(qid, position, correct, total)
 	q["result_timer"] = feedback_time
+	# a person reads the result popup first (they close it or it closes by
+	# itself); the answerer stays safe until then. Bots don't get a popup.
+	q["popup_open"] = not _bots.has(q["picker"])
+	q["popup_limit"] = 0.9 + 5.5
 	if total >= questions_to_win:
 		# the last correct answer wins at once: don't wait for the popup,
 		# or the round clock could run out first and give the Sili the win
@@ -994,18 +1125,21 @@ func _question_result(qid: int, position: int, correct: bool, total: int) -> voi
 	var picker_name := Network.player_name_of(q["picker"])
 	var mine: bool = q["picker"] == multiplayer.get_unique_id()
 	if mine:
+		# right answer green + check, wrong pick red + X, then the big popup
 		quiz_panel.show_result(position, correct)
-		quiz_panel.close()
 		my_question = -1
 		Sound.play("correct" if correct else "wrong")
 		GameState.buzz(40 if correct else 140)
-	if q["full_stop"]:
-		answering_notice.close()
-	if mine:
-		# the big TAMA! / MALI! popup is only for the player who answered
 		popup_question = qid
-		answer_popup.open(correct, position < 0, picker_name, entry["choices"][entry["answer"]],
-			entry.get("fact", ""), total, questions_to_win, _result_line(q, correct))
+		var points := 1 if (q["kind"] == "scroll" and correct and Network.online) else 0
+		var result_line := _result_line(q, correct)
+		get_tree().create_timer(0.9).timeout.connect(func():
+			quiz_panel.close()
+			if popup_question != qid or GameState.round_state == GameState.RoundState.ENDED:
+				return
+			# the big TAMA! / MALI! popup is only for the player who answered
+			answer_popup.open(correct, position < 0, picker_name, entry["choices"][entry["answer"]],
+				entry.get("fact", ""), total, questions_to_win, result_line, points))
 	elif q["kind"] == "scroll":
 		# everyone else (other Tubigs and the Sili) just gets a short line
 		var what := "answered correctly" if correct else ("ran out of time" if position < 0 else "answered wrong")
@@ -1030,6 +1164,28 @@ func _result_line(q: Dictionary, correct: bool) -> String:
 		"gate":
 			return "You squeeze through the gate!" if correct else ("Sour spray! Slowed for %d s" % int(slow_time))
 	return ""
+
+
+## The answerer closed the result popup (or it closed by itself).
+func _on_popup_dismissed() -> void:
+	var qid := popup_question
+	if qid < 0:
+		return
+	if multiplayer.is_server():
+		_host_popup_closed(multiplayer.get_unique_id(), qid)
+	else:
+		_popup_closed.rpc_id(1, qid)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _popup_closed(qid: int) -> void:
+	_host_popup_closed(multiplayer.get_remote_sender_id(), qid)
+
+
+func _host_popup_closed(sender: int, qid: int) -> void:
+	var q: Dictionary = _questions.get(qid, {})
+	if not q.is_empty() and q["picker"] == sender:
+		q["popup_open"] = false
 
 
 func _host_after_question(qid: int) -> void:
@@ -1464,7 +1620,9 @@ func _host_on_peer_left(id: int) -> void:
 				_host_resolve(qid, -1)
 		_rescuing.erase(id)
 		_thawing.erase(id)
-		if GameState.round_state in [GameState.RoundState.PLAYING, GameState.RoundState.QUESTION, GameState.RoundState.PAUSED]:
+		var in_round := GameState.round_state in [GameState.RoundState.PLAYING, GameState.RoundState.QUESTION,
+			GameState.RoundState.PAUSED] or (_begun and GameState.round_state == GameState.RoundState.READY)
+		if in_round:
 			if silis.is_empty():
 				_host_end(true, "THE SILI LEFT — TUBIG WINS!")
 			elif tubigs.is_empty():
@@ -1490,6 +1648,7 @@ func _remove_player(id: int) -> void:
 func _physics_process(delta: float) -> void:
 	if not multiplayer.is_server():
 		return
+	_host_intro_step(delta)
 	var now := Time.get_ticks_msec()
 	for qid in _questions.keys():
 		if not _questions.has(qid):
@@ -1497,7 +1656,9 @@ func _physics_process(delta: float) -> void:
 		var q: Dictionary = _questions[qid]
 		if q["answered"]:
 			q["result_timer"] -= delta
-			if q["result_timer"] <= 0.0:
+			q["popup_limit"] = q.get("popup_limit", 0.0) - delta
+			var popup_done: bool = not q.get("popup_open", false) or q["popup_limit"] <= 0.0
+			if q["result_timer"] <= 0.0 and popup_done:
 				_host_after_question(qid)
 		elif GameState.round_state == GameState.RoundState.PAUSED:
 			q["deadline"] += int(delta * 1000.0)   # the answer clock waits while paused
@@ -1517,6 +1678,30 @@ func _physics_process(delta: float) -> void:
 		_host_check_rescues()
 		_host_check_self_thaw()
 		_host_check_pickups()
+
+
+## Host: waits for every device to load (at most READY_TIMEOUT s, then slow
+## devices are dropped so one phone can't block everyone), then counts down
+## the intro and starts the round on GO.
+const READY_TIMEOUT := 12.0
+
+
+func _host_intro_step(delta: float) -> void:
+	if not _begun and Network.online:
+		_ready_wait += delta
+		if _ready_wait >= READY_TIMEOUT:
+			for id in Network.players.keys():
+				if not Network.ready_peers.has(id) and not Network.is_bot(id):
+					Network.drop_slow_peer(id)
+			_ready_wait = -INF
+	if _intro_go_at < 0.0:
+		return
+	_intro_go_at -= delta
+	if _intro_go_at <= 0.0:
+		_intro_go_at = -1.0
+		if GameState.round_state == GameState.RoundState.READY:
+			_start_round.rpc(_intro_seconds)
+			round_timer.start()
 
 
 func _process(delta: float) -> void:
@@ -1619,6 +1804,8 @@ func _host_end(team_won: bool, title: String) -> void:
 	var results := []
 	if not silis.is_empty() and not Network.solo_bot:
 		for id in player_by_id:
+			if Network.is_bot(id):
+				continue   # the LAN bot Sili is not a player
 			var s: Dictionary = _stats.get(id, {"correct": 0, "tags": 0, "rescues": 0})
 			results.append({"id": id, "name": Network.player_name_of(id), "won": player_by_id[id].is_tubig() == team_won,
 				"correct": s["correct"], "tags": s["tags"], "rescues": s["rescues"]})
@@ -1631,7 +1818,7 @@ func _end_round(team_won: bool, title: String, stats: String, results: Array) ->
 	quiz_panel.close()
 	answer_popup.close()
 	help_alert.close()
-	answering_notice.close()
+	round_intro.close()
 	questions.clear()
 	my_question = -1
 	popup_question = -1
@@ -1708,7 +1895,6 @@ func _round_ended_by_host() -> void:
 	quiz_panel.close()
 	answer_popup.close()
 	help_alert.close()
-	answering_notice.close()
 	pause_label.visible = false
 	var result: Label = $HUD/EndPanel/Margin/VBox/ResultLabel
 	result.text = "GAME OVER — THE HOST LEFT"
@@ -1732,11 +1918,11 @@ func _on_host_left() -> void:
 
 
 ## LEAVE button (top bar). Who may leave during a round:
-##   solo / test mode  - any time
-##   LAN host          - any time, but it ends the game for everyone (the
-##                       host runs the rules), so it asks first
+##   solo / test mode  - any time ("Your progress in this run will be lost.")
+##   LAN host          - any time, but it ends the game for everyone
 ##   LAN player        - only when the round is over (the end screen)
-## Leaving always takes two taps, so nobody quits by accident.
+## It opens the "LEAVE GAME?" window (scenes/confirm_modal.gd): STAY / LEAVE.
+## Solo pauses the round while it is open; LAN keeps playing for the others.
 func _can_leave_now() -> bool:
 	return not Network.online or multiplayer.is_server() \
 		or GameState.round_state == GameState.RoundState.ENDED
@@ -1750,23 +1936,38 @@ func _update_leave_button() -> void:
 
 
 func _on_leave_pressed() -> void:
+	if leave_modal.is_open():
+		return
 	if not _can_leave_now():
-		_show_message("You can leave when the round is over.", 2.0)
+		leave_modal.tell("NOT YET", "You can leave when the round is over.")
+		await leave_modal.answered
 		return
-	if Time.get_ticks_msec() < _leave_armed_until:
-		if Network.online and multiplayer.is_server() and GameState.round_state != GameState.RoundState.ENDED:
-			# tell everyone the game is over before closing the connection
-			_round_ended_by_host.rpc()
-			get_tree().create_timer(0.4).timeout.connect(_on_leave)
-			$HUD/TopBar/LeaveButton.disabled = true
-		else:
-			_on_leave()
+	var host_mid_round: bool = Network.online and multiplayer.is_server() \
+		and GameState.round_state != GameState.RoundState.ENDED
+	var message := "Your progress in this run will be lost."
+	if host_mid_round:
+		message = "You are the host. Leaving ends the game for everyone."
+	elif Network.online:
+		message = "Go back to the title screen?"
+	# solo: freeze the round while deciding
+	_paused_for_leave = false
+	if not Network.online and GameState.round_state == GameState.RoundState.PLAYING:
+		_set_paused(true)
+		_paused_for_leave = true
+	leave_modal.ask("LEAVE GAME?", message, "STAY", "LEAVE")
+	var leave: bool = await leave_modal.answered
+	if not leave:
+		if _paused_for_leave and GameState.round_state == GameState.RoundState.PAUSED:
+			_set_paused(false)
+		_paused_for_leave = false
 		return
-	_leave_armed_until = Time.get_ticks_msec() + 3000
 	if Network.online and multiplayer.is_server() and GameState.round_state != GameState.RoundState.ENDED:
-		_show_message("Tap LEAVE again to quit — this ENDS the game for everyone.", 3.0)
+		# tell everyone the game is over before closing the connection
+		_round_ended_by_host.rpc()
+		get_tree().create_timer(0.4).timeout.connect(_on_leave)
+		$HUD/TopBar/LeaveButton.disabled = true
 	else:
-		_show_message("Tap LEAVE again to quit to the title screen.", 3.0)
+		_on_leave()
 
 
 func _show_message(text: String, seconds: float) -> void:

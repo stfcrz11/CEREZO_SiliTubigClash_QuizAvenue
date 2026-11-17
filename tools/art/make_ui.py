@@ -393,3 +393,33 @@ def icon_leave(px, w, h):
 
 button("", RED, (96, 96), icon=icon_leave).save(f"{UI}/button_leave.png")
 print("leave icon saved")
+
+
+# --- result icons (12x12 grid, x4): check, X, hourglass
+ICONS = {
+    "icon_check": ((88, 200, 96), [
+        "............", "..........##", ".........###", "........###.", ".......###..", "##....###...",
+        "###..###....", ".######.....", "..####......", "...##.......", "............", "............"]),
+    "icon_x": ((230, 70, 60), [
+        "............", ".##......##.", ".###....###.", "..###..###..", "...######...", "....####....",
+        "....####....", "...######...", "..###..###..", ".###....###.", ".##......##.", "............"]),
+    "icon_hourglass": ((255, 166, 50), [
+        ".##########.", ".##########.", "..#......#..", "..##....##..", "...##..##...", "....####....",
+        "....####....", "...##..##...", "..##....##..", "..#......#..", ".##########.", ".##########."]),
+}
+for name, (color, rows) in ICONS.items():
+    im = Image.new("RGBA", (12, 12), (0, 0, 0, 0))
+    p = im.load()
+    for y, row in enumerate(rows):
+        for x, c in enumerate(row):
+            if c == "#":
+                p[x, y] = color + (255,)
+    # dark outline around the shape
+    out = im.copy()
+    po = out.load()
+    for y in range(12):
+        for x in range(12):
+            if p[x, y][3] == 0 and any(0 <= x + dx < 12 and 0 <= y + dy < 12 and p[x + dx, y + dy][3] for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                po[x, y] = OUT + (255,)
+    scaled(out, 4).save(f"{UI}/{name}.png")
+print("result icons saved")

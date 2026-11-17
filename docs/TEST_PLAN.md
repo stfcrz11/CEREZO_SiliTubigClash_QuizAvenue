@@ -4,7 +4,7 @@
 
 | Item | Value |
 |---|---|
-| Build | 1.1.0 (Android version code 2), commit: *record `git log -1 --format=%h` here* |
+| Build | 1.2.0 (Android version code 3), commit: *record `git log -1 --format=%h` here* |
 | Development PC | Windows 11 Home, NVIDIA GeForce MX250, Godot 4.7.2-stable |
 | Target devices | *fill in: phone model, Android version, screen size* (at least one physical phone + one emulator or second phone) |
 | Network | Phone hotspot or home Wi-Fi, UDP ports 7777 (game) and 7778 (discovery) allowed |
@@ -19,7 +19,7 @@ defect that loses data, blocks finishing a round, shows another player's data, o
 | R1 | Title screen, How to Play, Credits, version shown | TC-01, TC-02 |
 | R2 | Solo vs Bot: 4 rounds, win → next, lose → retry, best round saved | TC-03, TC-04 |
 | R3 | LAN host / join, 2–6 players, 7th refused | TC-05, TC-06 |
-| R4 | Movement on keyboard and touch (joystick, RUN, USE) | TC-07, TC-08 |
+| R4 | Movement on keyboard and touch (joystick, RUN, USE; joystick only on touch devices) | TC-07, TC-08, U-06 |
 | R5 | Scroll questions, help request, Tubig win | TC-09, TC-10 |
 | R6 | Tag → freeze; all frozen or time up → Sili wins | TC-11, TC-12 |
 | R7 | Buhos-Tubig rescue quiz | TC-13 |
@@ -67,6 +67,30 @@ these results are real but are **not** phone tests. Repeat them yourself and add
 | TC-27 | Solo: tap LEAVE twice | 1st tap: "Tap LEAVE again…"; 2nd tap: title screen | As expected (`test_leave.gd`, ROLE=solo) | Executed (AI): Pass |
 | TC-28 | LAN, 2 instances on one PC: client taps LEAVE mid-round; host leaves mid-round | Client button locked with message; host warned that the game ends for everyone; client sees "GAME OVER — THE HOST LEFT" with Main Menu | As expected (`test_leave.gd`, ROLE=host + ROLE=client, real time) | Executed (AI): Pass |
 | TC-26 | 60 s Solo Round 4 performance scenario | ≥ 55 FPS average on the phone | PC: 59–60 FPS (see `PERFORMANCE.md`) | Phone test needed |
+
+### v1.2 checks (executed by Claude (AI), 2026-11-17, development PC, Godot 4.7.2)
+
+Scripts: `tools/tests/test_v12.gd` (solo, `--fixed-fps 60`), `test_ui12.gd`
+(title screen, `SILITUBIG_MOBILE_UI=0/1`), `test_lan12.gd` (real-time LAN with
+several copies on one PC), `check_questions.py`.
+
+| ID | Check | Result |
+|---|---|---|
+| V-01…V-04 | Role reveal + round line; READY with full clock; no movement before GO; GO after the countdown | Pass |
+| V-05…V-11 | QUIZ heading, A–D badges, key A answers, check / X marks before the popup, movement blocked until keys let go, popup after ~0.9 s, host waits while it is open, key closes it and play resumes | Pass |
+| V-12 | Headings: HULING HIRIT 1/2, BUHOS-TUBIG, BUGTONG, KALAMANSI GATE, cooler flavor | Pass |
+| V-13…V-15, V-19 | LEAVE GAME?: opens, solo pauses, touch blocked, solo message; Esc = STAY resumes; LEAVE → title | Pass |
+| V-16…V-18 | 49 general questions without repeats; new cycle doesn't start with the last one; pool of 3 reshuffles cleanly | Pass |
+| U-01…U-07 | Finger drag (phone mode) / wheel (desktop) scrolls Credits and How to Play to the bottom; wide scrollbar; platform-only texts; joystick switch only in phone mode | Pass |
+| L-2 | 2 players: both Tubig + Bot Labuyo on both devices; Frozen 0/2 → 1/2; round 2:40; no bot on the leaderboard | Pass |
+| L-3 | 3 players: 1 human Sili, no bot; GO within 11 ms on all copies | Pass |
+| L-5 | 5 players: 2 Silis + 3 Tubigs; round 2:20; GO within 15 ms on all copies | Pass |
+| Q | `check_questions.py`: no exact duplicates; 2 bugtong choices that could also be right were replaced (Paniki → Lobo, Gripo → Kaldero) | Done |
+
+Screenshots of the intro, quiz, feedback, result popups and leave window at
+2400×1080 (phone mode), 1920×1080 and 1024×768 were checked. **Not tested:**
+a real phone (touch, safe area, vibration), 6 players, the 12 s slow-device
+drop, Help hand-off during the countdown.
 
 ## 4. Defect log
 

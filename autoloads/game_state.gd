@@ -16,11 +16,81 @@ const SETTINGS_PATH := "user://player_settings.cfg"
 
 var round_state: RoundState = RoundState.READY
 var player_name: String = "Player"
-## On-screen joystick + RUN button. On by default on phones / touch screens.
+## On-screen joystick + RUN button. On by default on phones / touch screens,
+## and never shown on desktop (see touch_controls_on()).
 var touch_controls: bool = DisplayServer.is_touchscreen_available() or OS.has_feature("mobile")
 var vibration: bool = true          # buzz the phone when tagged / answering
 var show_fps: bool = false          # performance readout in the game (for testing)
 var best_solo_round: int = 0        # highest SOLO VS BOT round cleared (0-4)
+
+
+## Questions already shown this game session, per question list (host only).
+## A session = from leaving the title screen until coming back to it: all
+## Solo vs Bot rounds (retries too) or all rounds of a LAN match.
+var _question_decks: Dictionary = {}    # list name -> indexes not used yet (shuffled)
+var _last_question: Dictionary = {}     # list name -> the index shown last
+
+
+## THE place that decides "phone / touch layout" vs "desktop layout": touch
+## screens and Android builds are mobile. For testing on a PC, start Godot
+## with the environment variable SILITUBIG_MOBILE_UI=1 (or 0 to force desktop).
+static func is_mobile_ui() -> bool:
+	var forced := OS.get_environment("SILITUBIG_MOBILE_UI")
+	if forced == "1":
+		return true
+	if forced == "0":
+		return false
+	return DisplayServer.is_touchscreen_available() or OS.has_feature("mobile")
+
+
+## The joystick + RUN overlay is shown only on touch devices with it switched
+## on (a stale saved "on" from a phone does nothing on a desktop).
+func touch_controls_on() -> bool:
+	return is_mobile_ui() and touch_controls
+
+
+## Next question index from a list, never repeating within the game session.
+## When every question of the list was used, a new shuffled cycle starts
+## (the one shown last is never first again).
+func next_question_index(list_name: String, list_size: int) -> int:
+	var deck: Array = _question_decks.get(list_name, [])
+	if deck.is_empty():
+		if _question_decks.has(list_name):
+			push_warning("Question list '%s' used up (%d questions): starting a new cycle." % [list_name, list_size])
+		deck = range(list_size)
+		deck.shuffle()
+		var last: int = _last_question.get(list_name, -1)
+		if deck.size() > 1 and deck.back() == last:
+			deck.push_front(deck.pop_back())   # don't show the same question twice in a row
+	var index: int = deck.pop_back()
+	_question_decks[list_name] = deck
+	_last_question[list_name] = index
+	return index
+
+
+## The local player's movement keys / joystick. After answering with A-D
+## (A and D are also movement keys) movement is ignored until every movement
+## key is let go, so the player doesn't walk off when the question closes.
+var _moves_blocked: bool = false
+
+
+func block_moves_until_released() -> void:
+	_moves_blocked = true
+
+
+func move_input() -> Vector2:
+	var v := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if _moves_blocked:
+		if v != Vector2.ZERO:
+			return Vector2.ZERO
+		_moves_blocked = false
+	return v
+
+
+## Start a fresh session: every question can be asked again.
+func reset_question_decks() -> void:
+	_question_decks.clear()
+	_last_question.clear()
 
 
 func _ready() -> void:

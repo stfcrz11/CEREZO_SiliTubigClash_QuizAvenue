@@ -3,7 +3,7 @@ func _initialize() -> void:
 	var bad := 0
 	for path in ["res://scenes/player.gd", "res://scenes/bot_sili.gd", "res://scenes/maze_game.gd", "res://autoloads/network.gd",
 			"res://data/questions.gd", "res://scenes/quiz_panel.gd", "res://scenes/answer_popup.gd", "res://scenes/minimap.gd",
-			"res://scenes/title_screen.gd", "res://scenes/title_runners.gd", "res://scenes/touch_controls.gd", "res://scenes/settings_panel.gd", "res://autoloads/game_state.gd", "res://data/leaderboard.gd", "res://scenes/ui_button_style.gd"]:
+			"res://scenes/title_screen.gd", "res://scenes/title_runners.gd", "res://scenes/touch_controls.gd", "res://scenes/settings_panel.gd", "res://autoloads/game_state.gd", "res://data/leaderboard.gd", "res://scenes/ui_button_style.gd", "res://scenes/ui_scale.gd", "res://scenes/pixel_ui.gd", "res://scenes/touch_scroll.gd", "res://data/how_to_play.gd", "res://scenes/quiz_panel.gd", "res://scenes/answer_popup.gd", "res://scenes/confirm_modal.gd", "res://scenes/round_intro.gd", "res://scenes/help_alert.gd", "res://scenes/store_modal.gd", "res://scenes/minimap.gd"]:
 		var s = load(path)
 		if s == null or not s.can_instantiate():
 			print("FAILED: ", path)

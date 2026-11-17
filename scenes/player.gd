@@ -201,7 +201,7 @@ func _physics_process(delta: float) -> void:
 	if not playing or frozen or answering or stun_time > 0.0:
 		velocity = Vector2.ZERO
 	else:
-		var input_vector := bot_move if is_bot else Input.get_vector("move_left", "move_right", "move_up", "move_down")
+		var input_vector: Vector2 = bot_move if is_bot else GameState.move_input()
 		var wants_sprint := bot_sprint if is_bot else Input.is_action_pressed("sprint")
 		var sprinting := wants_sprint and stamina > 0.0 and input_vector != Vector2.ZERO
 		var current_speed := tubig_speed if is_tubig() else sili_speed

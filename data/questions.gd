@@ -4,6 +4,10 @@ extends RefCounted
 ## answer = index of the correct option in choices, fact = short note shown
 ## after answering. Add or edit entries freely; the game draws them at random.
 ##
+## Each question's id is its position in its list; the game never shows the
+## same id twice in a game session (GameState.next_question_index).
+## Check for duplicates with:  python tools/tests/check_questions.py
+##
 ## Which list is used where (scenes/maze_game.gd):
 ##   QUESTIONS - "?" scrolls, Buhos-Tubig rescues, Halo-Halo coolers,
 ##               Kalamansi gates
@@ -91,11 +95,11 @@ const BUGTONG := [
 	{"q": "Bugtong: Maliit pa si Kumpare, nakakaakyat na sa tore. (Small Kumpare can already climb the tower.)", "choices": ["Langgam (Ant)", "Unggoy (Monkey)", "Pusa (Cat)", "Ibon (Bird)"], "answer": 0, "fact": "Ants climb walls and towers with ease."},
 	{"q": "Bugtong: Baboy ko sa pulo, ang balahibo'y pako. (My pig on the island has nails for hair.)", "choices": ["Langka (Jackfruit)", "Saging (Banana)", "Bayabas (Guava)", "Kasoy (Cashew)"], "answer": 0, "fact": "Jackfruit (langka) has a spiky skin."},
 	{"q": "Bugtong: Hindi hari, hindi pari, ang suot ay sari-sari. (Not a king, not a priest, but dressed in many colors.)", "choices": ["Sampayan (Clothesline)", "Bahaghari (Rainbow)", "Paru-paro (Butterfly)", "Parol"], "answer": 0, "fact": "A clothesline 'wears' many kinds of clothes."},
-	{"q": "Bugtong: Nagbibigay na, sinasakal pa. (It gives, yet it is choked.)", "choices": ["Bote (Bottle)", "Baka (Cow)", "Gripo (Faucet)", "Puno (Tree)"], "answer": 0, "fact": "You hold a bottle by its 'neck' while it pours."},
+	{"q": "Bugtong: Nagbibigay na, sinasakal pa. (It gives, yet it is choked.)", "choices": ["Bote (Bottle)", "Baka (Cow)", "Kaldero (Pot)", "Puno (Tree)"], "answer": 0, "fact": "You hold a bottle by its 'neck' while it pours."},
 	{"q": "Bugtong: Dalawang batong itim, malayo ang tingin. (Two black stones that see far away.)", "choices": ["Mata (Eyes)", "Tenga (Ears)", "Uling (Charcoal)", "Bituin (Stars)"], "answer": 0, "fact": "Eyes are the 'stones' that see far."},
 	{"q": "Bugtong: May puno walang bunga, may dahon walang sanga. (Has a trunk but no fruit, has leaves but no branches.)", "choices": ["Aklat (Book)", "Saging (Banana plant)", "Kawayan (Bamboo)", "Walis (Broom)"], "answer": 0, "fact": "A book has 'leaves' (pages) but no branches."},
 	{"q": "Bugtong: Heto na si Lelong, bubulong-bulong. (Here comes Grandpa, mumbling and mumbling.)", "choices": ["Bubuyog (Bee)", "Hangin (Wind)", "Radyo", "Lamok (Mosquito)"], "answer": 0, "fact": "Bees buzz like a mumbling lolo."},
-	{"q": "Bugtong: Buto't balat, lumilipad. (Bones and skin, yet it flies.)", "choices": ["Saranggola (Kite)", "Paniki (Bat)", "Ibon (Bird)", "Eroplano"], "answer": 0, "fact": "A kite is just a bamboo frame (bones) and paper (skin)."},
+	{"q": "Bugtong: Buto't balat, lumilipad. (Bones and skin, yet it flies.)", "choices": ["Saranggola (Kite)", "Lobo (Balloon)", "Ibon (Bird)", "Eroplano"], "answer": 0, "fact": "A kite is just a bamboo frame (bones) and paper (skin)."},
 	{"q": "Bugtong: Kung kailan mo pinatay, saka pa humaba ang buhay. (Only when you kill it does its life get longer.)", "choices": ["Kandila (Candle)", "Apoy (Fire)", "Ilaw (Lamp)", "Uling (Charcoal)"], "answer": 0, "fact": "Blowing out a candle makes it last longer."},
 	{"q": "Bugtong: Isang prinsesa, nakaupo sa tasa. (A princess sitting on a cup.)", "choices": ["Kasoy (Cashew)", "Mangga (Mango)", "Bayabas (Guava)", "Kalamansi"], "answer": 0, "fact": "The cashew nut sits on top of its fruit like a crown."},
 	{"q": "Bugtong: Munting tampipi, puno ng salapi. (A small basket full of coins.)", "choices": ["Sili (Chili)", "Ampalaya", "Talong (Eggplant)", "Upo"], "answer": 0, "fact": "The 'coins' are the round seeds inside a sili."},

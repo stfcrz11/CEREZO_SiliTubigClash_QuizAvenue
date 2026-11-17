@@ -73,8 +73,17 @@ func play_solo(with_bot: bool = false, round: int = 1) -> void:
 	online = false
 
 
+## Bots use fixed ids (991-993) and are never real network peers: solo
+## bots, and the bot Sili of a 2-player LAN game.
 func is_bot(peer_id: int) -> bool:
-	return solo_bot and peer_id in BOT_IDS
+	return peer_id in BOT_IDS
+
+
+## LAN with exactly 2 humans: both are Tubig and the host runs a bot Sili.
+## The bot is not a player: it takes no lobby slot, doesn't count for the
+## 6-player limit or the 2-player minimum, and never goes on the leaderboard.
+func needs_lan_bot() -> bool:
+	return online and not solo_bot and players.size() == 2
 
 
 func solo_round_info() -> Dictionary:
@@ -98,6 +107,7 @@ func host_game() -> Error:
 	online = true
 	host_id = randi()
 	round_number = randi() % MAX_PLAYERS   # random first Sili
+	GameState.reset_question_decks()       # a new lobby = a new game session
 	_start_beacon()
 	players_changed.emit()
 	return OK
@@ -149,12 +159,16 @@ func player_name_of(peer_id: int) -> String:
 
 
 ## 2-4 players: 1 Sili.  5-6 players: 2 Silis.  Everyone else is Tubig.
+## 2 players: 0 human Silis (a bot Sili joins). 3-4: 1 Sili. 5-6: 2 Silis.
 static func sili_count_for(player_count: int) -> int:
+	if player_count <= 2:
+		return 0
 	return 2 if player_count >= 5 else 1
 
 
 ## Host only. Picks who is Sili this round; the role moves down the
-## player list every round so everyone gets a turn.
+## player list every round so everyone gets a turn. With 2 players both are
+## Tubig (the bot is the Sili), so there is nothing to rotate.
 func assign_roles() -> Dictionary:
 	if solo_bot:
 		var solo_roles := {1: "tubig"}   # you always run from the bots
@@ -166,7 +180,7 @@ func assign_roles() -> Dictionary:
 	var roles := {}
 	for id in ids:
 		roles[id] = "tubig"
-	if ids.size() >= MIN_PLAYERS:
+	if ids.size() >= MIN_PLAYERS and sili_count_for(ids.size()) > 0:
 		var n := sili_count_for(ids.size())
 		for i in n:
 			roles[ids[(round_number * n + i) % ids.size()]] = "sili"
@@ -311,6 +325,25 @@ func everyone_ready() -> bool:
 		if not ready_peers.has(id) and not is_bot(id):
 			return false
 	return true
+
+
+## Host: a device that didn't finish loading in time is sent back to the
+## title screen, so one slow phone can't hold up everyone.
+func drop_slow_peer(id: int) -> void:
+	if not is_host() or not players.has(id):
+		return
+	_told_to_leave.rpc_id(id, "Your device took too long to load the game.")
+	get_tree().create_timer(0.3).timeout.connect(func():
+		if multiplayer.multiplayer_peer and players.has(id):
+			multiplayer.multiplayer_peer.disconnect_peer(id))
+
+
+@rpc("authority", "call_remote", "reliable")
+func _told_to_leave(reason: String) -> void:
+	last_error = reason
+	players.clear()        # so the disconnect isn't reported as "the host left"
+	leave()
+	get_tree().change_scene_to_file(GameState.TITLE_SCENE)
 
 
 @rpc("authority", "call_local", "reliable")
