@@ -231,7 +231,7 @@ other keys are read directly.
 
 | Scene | What it shows | Main nodes |
 |---|---|---|
-| `title_screen.tscn` (main scene) | City background, logo, name field, menu; opens How to Play, Leaderboard, Host and Join | `Background`, `Dim`, `Menu` (`TitleLogo`, `PlayerNameRow`, `HostButton`, `JoinButton`, `HowToButton`, `LeaderboardButton`, `QuitButton`, `ErrorLabel`), `LeaderboardDim`, `Leaderboard` pop-up (`Header` with `Title` + `CloseButton`, `Scoring`, `HeaderRow`, `Scroll/Rows/RowTemplate`, `Empty`), `HowToDim`, `HowToPanel` (`Header`, `Divider`, `Scroll/Rules` RichTextLabel, `CloseButton`), `HostModal`, `JoinModal` |
+| `title_screen.tscn` (main scene) | City background, logo, profile card, menu; opens How to Play, Leaderboard, Host and Join | `Background`, `Dim`, `ProfileCard` (avatar, `NameLabel`, pencil; opens `NamePopup` with `NameInput`, `SaveButton`, `CancelButton`, `CloseButton`), `Menu` (`TitleLogo`, `HostButton`, `JoinButton`, `HowToButton`, `LeaderboardButton`, `QuitButton`, `ErrorLabel`), `LeaderboardDim`, `Leaderboard` pop-up (`Header` with `Title` + `CloseButton`, `Scoring`, `HeaderRow`, `Scroll/Rows/RowTemplate`, `Empty`), `HowToDim`, `HowToPanel` (`Header`, `Divider`, `Scroll/Rules` RichTextLabel, `CloseButton`), `HostModal`, `JoinModal` |
 | `host_modal.tscn` | "HOST A GAME" sari-sari store window: IP on a chalkboard, 6 player slots, status, START GAME | `Center/Store/Top` (`Roof`, `Title`, `CloseButton`), `Body/VBox/HostCard`, `PlayersCard` (`Slots/SlotTemplate`), `Counter` (`Status`, buttons) |
 | `join_modal.tscn` | "JOIN A GAME" store window: games nearby, type-an-IP, slots after connecting | `FindCard` (`FoundList/GameTemplate`), `IpCard` (`IpEdit`, `ConnectButton`), `PlayersCard`, `Counter` |
 | `maze_game.tscn` | The round | `Map` (city_map), `Camera`, `Scrolls`, `Actors`, `RoundTimer`, `AnimationPlayer`, `HUD` (CanvasLayer: `Minimap`, `TopBar`, `WarningLabel`, `WarningGlow`, `MessageLabel`, `PauseLabel`, `QuizPanel`, `AnswerPopup`, `AnsweringNotice`, `HelpAlert`, `EndPanel`). The `HUD` is **hidden in the editor** so it doesn't cover the map; the game shows it at start. |
@@ -267,7 +267,7 @@ other keys are read directly.
 | `scenes/help_alert.gd` | Help request alert with YES/NO and Y/N keys; text editable in the Inspector. |
 | `scenes/answering_notice.gd` | The Sili's "Tubig is answering" notice; text editable in the Inspector. |
 | `scenes/question_scroll.gd` | Scroll sprite scaling and pulse. |
-| `scenes/title_screen.gd` | Title menu, name field, How to Play, and the Leaderboard pop-up (open, close, refill). |
+| `scenes/title_screen.gd` | Title menu, profile card + CHANGE PLAYER NAME window, How to Play, and the Leaderboard pop-up (open, close, refill). |
 | `scenes/store_modal.gd` | Shared base of the Host/Join windows: player slots, counts, status, close. |
 | `scenes/host_modal.gd` / `join_modal.gd` | Host window (IP, START) and Join window (games list, connect). |
 | `scenes/png_button.gd` | PNG buttons: fit, hover glow, press shrink, grey when disabled. |

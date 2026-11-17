@@ -1,5 +1,7 @@
 extends Control
 ## Title screen: Play, How to Play, Leaderboard, Credits, Quit.
+## The ProfileCard (top-left) shows the player name; clicking it opens the
+## CHANGE PLAYER NAME window (NamePopup: SAVE, CANCEL, X, Esc, click outside).
 ## The background is the pixel city (title_runners.gd animates the kids).
 ## PLAY opens the PLAY window (close: X, Esc, or click outside) with:
 ##   SOLO VS BOT  -> starts a round right away: you (Tubig) vs a Bot Sili
@@ -21,9 +23,15 @@ const RANK_COLORS := [Color(1, 0.82, 0.3), Color(0.8, 0.84, 0.9), Color(0.85, 0.
 
 
 func _ready() -> void:
-	$Menu/PlayerNameRow/PlayerNameInput.text = GameState.player_name
-	$Menu/PlayerNameRow/PlayerNameInput.text_changed.connect(_on_player_name_changed)
-	$Menu/PlayerNameRow/PlayerNameInput.focus_exited.connect(_normalize_player_name)
+	# profile card (top-left) -> CHANGE PLAYER NAME window
+	$ProfileCard/HBox/NameLabel.text = GameState.player_name
+	$ProfileCard.pressed.connect(_show_name_popup.bind(true))
+	$NamePopup/Margin/VBox/Header/CloseButton.pressed.connect(_show_name_popup.bind(false))
+	$NamePopup/Margin/VBox/Buttons/CancelButton.pressed.connect(_show_name_popup.bind(false))
+	$NamePopup/Margin/VBox/Buttons/SaveButton.pressed.connect(_save_player_name)
+	$NamePopup/Margin/VBox/NameInput.text_submitted.connect(func(_t): _save_player_name())
+	$NamePopup/Margin/VBox/NameInput.text_changed.connect(func(_t): _set_name_hint(""))
+	$NameDim.gui_input.connect(func(e): if e is InputEventMouseButton and e.pressed: _show_name_popup(false))
 	$Menu/PlayButton.pressed.connect(_show_play.bind(true))
 	$PlayPanel/Margin/VBox/Header/CloseButton.pressed.connect(_show_play.bind(false))
 	$PlayDim.gui_input.connect(_on_play_dim_input)
@@ -51,6 +59,7 @@ func _ready() -> void:
 	_show_leaderboard(false)
 	_show_play(false)
 	_show_credits(false)
+	_show_name_popup(false)
 	Sound.play_music("title")   # keeps playing if it already is
 	get_tree().paused = false
 	# show why we came back here (e.g. the host left)
@@ -58,18 +67,35 @@ func _ready() -> void:
 	Network.last_error = ""
 
 
-func _on_player_name_changed(value: String) -> void:
-	# only valid names are saved; the reason is shown under the menu
+## Open / close the CHANGE PLAYER NAME window. It always opens with the
+## saved name, so CANCEL / X / Esc / a click outside throw away any typing.
+func _show_name_popup(open: bool) -> void:
+	$NamePopup.visible = open
+	$NameDim.visible = open
+	_set_name_hint("")
+	if open:
+		var input: LineEdit = $NamePopup/Margin/VBox/NameInput
+		input.text = GameState.player_name
+		input.grab_focus()
+		input.caret_column = input.text.length()
+
+
+func _save_player_name() -> void:
+	# only valid names are saved; otherwise the reason replaces the hint
+	var value: String = $NamePopup/Margin/VBox/NameInput.text
 	var problem := GameState.name_problem(value)
-	$Menu/ErrorLabel.text = problem
-	if problem.is_empty():
-		GameState.set_player_name(value)
+	if not problem.is_empty():
+		_set_name_hint(problem)
+		return
+	GameState.set_player_name(value)   # saves to user:// (existing save system)
+	$ProfileCard/HBox/NameLabel.text = GameState.player_name
+	_show_name_popup(false)
 
 
-func _normalize_player_name() -> void:
-	# an invalid name is replaced by the last saved one
-	$Menu/PlayerNameRow/PlayerNameInput.text = GameState.player_name
-	$Menu/ErrorLabel.text = ""
+func _set_name_hint(problem: String) -> void:
+	var hint: Label = $NamePopup/Margin/VBox/Hint
+	hint.text = problem if not problem.is_empty() else "Max 12 characters"
+	hint.add_theme_color_override("font_color", Color(1, 0.5, 0.45) if not problem.is_empty() else Color(0.62, 0.66, 0.76))
 
 
 func _show_play(open: bool) -> void:
@@ -164,6 +190,10 @@ func _apply_layout() -> void:
 		close.custom_minimum_size = Vector2(200, 50) * k
 	$Menu/ErrorLabel.add_theme_font_size_override("font_size", UiScale.font(vp, 15))
 	$VersionLabel.add_theme_font_size_override("font_size", UiScale.font(vp, 14))
+	_fit($NamePopup, UiScale.modal_size(vp, Vector2(0.6, 0.8), Vector2(400, 300)))
+	$ProfileCard/HBox/NameLabel.add_theme_font_size_override("font_size", UiScale.font(vp, 18))
+	$NamePopup/Margin/VBox/Header/Title.add_theme_font_size_override("font_size", UiScale.font(vp, 22))
+	$NamePopup/Margin/VBox/NameInput.add_theme_font_size_override("font_size", UiScale.font(vp, 16))
 
 
 ## Centre a window with the given size.
@@ -187,7 +217,10 @@ func _show_how_to(open: bool) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("ui_cancel"):
 		return
-	if $PlayPanel.visible:
+	if $NamePopup.visible:
+		_show_name_popup(false)
+		get_viewport().set_input_as_handled()
+	elif $PlayPanel.visible:
 		_show_play(false)
 		get_viewport().set_input_as_handled()
 	elif $HowToPanel.visible:
