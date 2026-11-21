@@ -14,3 +14,6 @@ build/
 *.idsig
 *.keystore
 *.jks
+
+# Relay server dependencies
+node_modules/

@@ -61,6 +61,19 @@ new name. What stays the same, on purpose:
   title screen; tap it to change it (CHANGE PLAYER NAME window, max 12
   characters).
 
+## Online play (room codes)
+
+LAN play needs everyone on the same Wi-Fi or hotspot. **Online play** works
+across networks (home Wi-Fi, mobile data, school Wi-Fi): the host taps
+**PLAY ONLINE** in the HOST A GAME window and gets a 5-letter room code;
+friends type it in **ONLINE ROOM CODE** in JOIN A GAME.
+
+It goes through a small relay server (`server/relay/`, Node.js) that has to
+be running on the internet; the game finds it through `RELAY_URL` in
+`data/online_config.gd`. Until that address is set, the online buttons are
+hidden and the game is LAN-only as before. Setup steps (free Render
+deployment): [`server/relay/README.md`](server/relay/README.md).
+
 ## Concept
 
 A LAN multiplayer chase game based on the Filipino street game sili-tubig,
@@ -118,7 +131,9 @@ a fun way to learn Filipino culture.
 - Godot Engine **4.7** (tested with 4.7.2-stable), GDScript only, no
   third-party plugins
 - Godot high-level multiplayer (ENetMultiplayerPeer + RPCs); own UDP LAN
-  discovery
+  discovery; online rooms through a WebSocket relay (custom
+  MultiplayerPeerExtension in `autoloads/relay_peer.gd`, server in
+  `server/relay/`, Node.js + `ws`)
 - PNG art in `assets/` (see "Authorized assets" and `assets/README.md`);
   the maze is a TileMap in `scenes/city_map.tscn`
 
@@ -127,35 +142,37 @@ a fun way to learn Filipino culture.
 ```
 autoloads/
   game_state.gd       Round state, scene paths, keyboard controls, player name
-  network.gd          Host / join, LAN discovery, player list, roles
+  network.gd          Host / join (LAN and online), LAN discovery, player list, roles
+  relay_peer.gd       Online play: sends the game's packets through the relay
   sound.gd            Music and sound effects (assets/audio/)
 data/
   how_to_play.gd      HOW TO PLAY text (desktop and phone versions)
   questions.gd        Question lists: 49 general (culture, food, places),
-                      16 hard (self-thaw), 14 bugtong riddles (peppers)
+					  16 hard (self-thaw), 14 bugtong riddles (peppers)
   leaderboard.gd      Points and rankings, saved on this device
   solo_save.gd        Solo vs Bot progress (user://solo_save.cfg)
+  online_config.gd    Relay server address for online play (RELAY_URL)
 scenes/
   title_screen.*      Menu, name card, How to Play, Credits
   host_modal.*        "Host a game" window (sari-sari store): IP, player slots, Start
   join_modal.*        "Join a game" window: games found nearby, type-the-IP
   store_modal.gd      Shared parts of both windows (slots, status, close, sizes)
   pixel_store.gd      The shared sari-sari store window (roof, awning, title
-                      plank, shelves, counter) and its screen-based sizes
+					  plank, shelves, counter) and its screen-based sizes
   leaderboard_modal.gd  TOP PLAYERS window (store look, scrolling rows)
   solo_resume_modal.gd  SOLO GAME FOUND window (RESUME / NEW GAME)
   result_panel.gd     End-of-round TUBIG WINS / SILI WINS window
   png_button.gd       Buttons made from PNG pictures (hover glow, press)
   city_map.tscn       The maze, painted with tiles (edit it in the editor)
   maze_game.*         The round: camera, scrolls, quizzes (scroll, rescue,
-                      self-thaw, cooler, pepper, gate), help requests,
-                      tags, effects, timer, win/lose, solo rounds (host decides)
+					  self-thaw, cooler, pepper, gate), help requests,
+					  tags, effects, timer, win/lose, solo rounds (host decides)
   bot_sili.gd         Computer Sili for SOLO VS BOT (easy/medium/hard/labuyo)
   player.*            One character (5-direction animations, effects, trails)
   minimap.gd          The MAPA in the corner (your dot, scroll dots)
   question_scroll.*   The "?" pickup
   quiz_panel.*        Question card: heading + seconds, question, time bar,
-                      A-D answers (2 x 2), help button, right/wrong marks
+					  A-D answers (2 x 2), help button, right/wrong marks
   answer_popup.*      Big TAMA! / MALI! / TIME'S UP! result popup
   round_intro.*       Role reveal + 3-2-1-GO before every round
   confirm_modal.*     Reusable "are you sure?" window (LEAVE GAME?)
@@ -164,6 +181,7 @@ scenes/
   pixel_ui.gd         Shared pixel window look (panels, plaques, buttons)
   touch_scroll.gd     Finger scrolling + wide scrollbar for long windows
   settings_panel.*    Settings window (audio on/off + volume, controls)
+server/relay/        Online relay server (Node.js): room codes, packet relay
 tools/art/           Python scripts that made the character sheets, city
 					 atlas and station props (not used by the game)
 ```
@@ -195,7 +213,7 @@ Instances → 2 or more, then Run. Host in one window, join from the others.
 
 **Tips:**
 - Venue/school Wi-Fi often blocks device-to-device traffic. Use the host's
-  phone or laptop hotspot instead.
+  phone or laptop hotspot instead, or online play (room code).
 - Allow Godot (or the exported game) through Windows Firewall on the host PC,
   otherwise others can't join.
 
@@ -275,6 +293,8 @@ Phones show only touch instructions and desktops only keyboard instructions
   confirmation window; role reveal + synced countdown before every round;
   no repeated questions in a session; 2 players = both Tubig + a bot Sili;
   the "Tubig is answering" notice was removed
+- **Online play with room codes** through a relay server (hidden until
+  `RELAY_URL` is set); LAN play unchanged
 - **v1.2 (Quiz Avenue update):** renamed to Quiz Avenue; Solo vs Bot progress
   saved with a RESUME / NEW GAME window; store-style pixel result screens;
   bigger phone-friendly Host, Join and TOP PLAYERS windows; name card on the
@@ -398,6 +418,10 @@ Result: **Success** (2026-11-21, Godot 4.7.2), 72.2 MB, no export warnings.
   shared store window (`scenes/pixel_store.gd`, roof and awning pieces from
   `tools/art/make_store_parts.py`).
 - Name card and CHANGE PLAYER NAME window on the title screen.
+- Online play across networks: PLAY ONLINE (room code) in HOST A GAME and an
+  ONLINE ROOM CODE box in JOIN A GAME, through the relay in `server/relay/`
+  (`autoloads/relay_peer.gd`, `data/online_config.gd`). Shown once a relay
+  address is set.
 
 ## Authorized assets
 
