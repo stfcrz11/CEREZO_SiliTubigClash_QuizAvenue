@@ -437,6 +437,8 @@ Result: **Success** (2026-11-21, Godot 4.7.2), 72.2 MB, no export warnings.
   (https://acxaonpixelia.itch.io/simple-32x32-city-tileset). The maze tiles in
   `assets/walls/city_atlas.png` are cut and combined from it (curbs, roof
   edges, shop/apartment fronts, hedges) by `tools/art/reskin_city.py`.
+  Page terms (read 2026-11-21): personal and commercial use in your own games and
+  editing allowed; reselling or redistributing the files not allowed; credit appreciated.
 - **Characters:** **Eris Esra's character template v4.1** (16x32). The Sili
   and Tubig outfits in `assets/characters/*_sheet.png` were painted onto the
   template by `tools/art/make_characters.py`.
@@ -447,7 +449,9 @@ Result: **Success** (2026-11-21, Godot 4.7.2), 72.2 MB, no export warnings.
   `make_store_parts.py`, `make_profile_ui.py`).
 - **Audio** (`assets/audio/`, 11 MP3 files: title music, answering loop,
   button click, game start, correct, wrong, help alert, Sili nearby,
-  game over, win, lose): [add source / author / license].
+  game over, win, lose): collected during development; the original sources,
+  authors and licenses were not recorded (disclosed in `CREDITS.md` as audio of
+  unverified origin, to be replaced before any public release).
 - **Fonts:** a 5x7 pixel font drawn for this game
   (`assets/fonts/pixel5x7.fnt`, made by `tools/art/make_pixel_font.py`) for
   window titles, code-drawn buttons and the result screens; Godot's default
