@@ -1,4 +1,4 @@
-# Project State — Sili-Tubig: Task Avenue
+# Project State — Sili-Tubig: Quiz Avenue
 
 State of the project as of **2026-09-27**. Latest commit: `1919187 Add scroll markings on
 the minimap`. Everything up to that commit is committed; this document and `README.md` were
@@ -64,7 +64,7 @@ marked **[CHECK]**.
 
 ## 1. Game summary
 
-**Title:** Sili-Tubig: Task Avenue (`config/name` in `project.godot`)
+**Title:** Sili-Tubig: Quiz Avenue (`config/name` in `project.godot`; renamed from "Task Avenue" in 1.2.0 — `user://` still points at the old "Sili-Tubig- Task Avenue" folder so saved data is kept)
 
 **Concept:** a LAN multiplayer chase game in a maze that looks like a Philippine city,
 based on the Filipino street game *sili-tubig*. **Sili** players chase and **Tubig**
@@ -408,7 +408,7 @@ but none of those files are in this folder.
 | Orientation | `window/handheld/orientation=4` (sensor landscape) |
 | Default texture filter | Nearest (pixel art). The title screen uses Linear |
 | Autoloads | `GameState`, `Network`, `Sound` |
-| Export presets | `export_presets.cfg`: **Android** (debug APK, no Gradle build) → `build/SiliTubig_TaskAvenue.apk`; package `com.cerezo.silitubig.taskavenue`, version 1.0; ARM 32/64-bit; permissions Internet, network/Wi-Fi state, Wi-Fi multicast; immersive fullscreen; excludes `assets/ui/store_templates/*` and `*.md` |
+| Export presets | `export_presets.cfg`: **Android** (debug APK, no Gradle build) → `build/SiliTubig_QuizAvenue.apk`; label "Sili-Tubig: Quiz Avenue"; package `com.cerezo.silitubig.taskavenue` (kept, so it updates the installed app); version 1.2.0, version code 4; ARM 32/64-bit; permissions Internet, network/Wi-Fi state, Wi-Fi multicast; immersive fullscreen; excludes `assets/ui/store_templates/*` and `*.md` |
 | VRAM compression | `textures/vram_compression/import_etc2_astc=true` (required for Android export) |
 | Physics layers (in code) | walls 1, Tubig 2, Sili 4; players collide with walls only |
 | Git | `.gitignore` excludes `.godot/` (Godot's cache, rebuilt on each PC) and `/android/` |

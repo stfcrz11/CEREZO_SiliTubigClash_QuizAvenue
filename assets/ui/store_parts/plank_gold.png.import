@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://juaxtlmxpe7i"
-path="res://.godot/imported/android_bg_432.png-ba3221898e5cbe963191325de6fb173f.ctex"
+uid="uid://2nijo7pmd26p"
+path="res://.godot/imported/plank_gold.png-43fb3bc15946cc8b6c2eabc2cb9d7203.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icon/android_bg_432.png"
-dest_files=["res://.godot/imported/android_bg_432.png-ba3221898e5cbe963191325de6fb173f.ctex"]
+source_file="res://assets/ui/store_parts/plank_gold.png"
+dest_files=["res://.godot/imported/plank_gold.png-43fb3bc15946cc8b6c2eabc2cb9d7203.ctex"]
 
 [params]
 

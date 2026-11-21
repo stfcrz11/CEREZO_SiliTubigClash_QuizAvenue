@@ -47,7 +47,7 @@ func _process(delta: float) -> bool:
 		for b in game.silis: print("   ", b.name, " ans=", b.answering, " turbo=", b.turbo_time, " move=", b.bot_move, " qs=", game._questions, " now=", Time.get_ticks_msec(), " intel=", game.bot_intel)
 		print("t=%.1f tubig frozen=%s ans=%s | %s | msg: %s" % [frames / 60.0, t.frozen if t else null, t.answering if t else null, s, game.message_label.text])
 	if gs.round_state == 4:
-		print("END: ", game.get_node("HUD/EndPanel/Margin/VBox/ResultLabel").text, " | ", game.get_node("HUD/EndPanel/Margin/VBox/StatsLabel").text.replace("\n", " / "))
+		print("END: ", game.end_panel.result_label.text, " | ", game.end_panel.stats_label.text.replace("\n", " / "))
 		print("button: ", game.play_again_button.text)
 		return true
 	return frames > 60 * 40

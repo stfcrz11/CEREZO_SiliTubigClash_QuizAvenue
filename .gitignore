@@ -6,3 +6,11 @@
 
 # Python cache from the art scripts
 __pycache__/
+
+# Builds and signing keys (never commit these)
+build/
+*.apk
+*.aab
+*.idsig
+*.keystore
+*.jks

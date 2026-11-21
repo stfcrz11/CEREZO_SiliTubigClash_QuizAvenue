@@ -65,7 +65,7 @@ static func text(mobile: bool, head_size: int) -> String:
 	out += "• The top bar shows [b]Frozen: 1 / 3[/b].\n\n"
 
 	out += h.call("PLAYING", GOLD)
-	out += "• [b]SOLO VS BOT[/b]: 4 rounds, easy to difficult (1–3 bots). Win to unlock the next round; lose and retry.\n"
+	out += "• [b]SOLO VS BOT[/b]: 4 rounds, easy to difficult (1–3 bots). Win to unlock the next round; lose and retry. Your round is saved: next time choose RESUME or NEW GAME.\n"
 	out += "• [b]LAN[/b]: one player picks [b]HOST GAME[/b]; the others pick [b]JOIN GAME[/b] (same Wi-Fi or phone hotspot).\n"
 	out += "• [b]Leaving[/b]: the door button asks first. Solo — any time. LAN host — any time, but it [b]ends the game for everyone[/b]. Other players — after the round.\n\n"
 

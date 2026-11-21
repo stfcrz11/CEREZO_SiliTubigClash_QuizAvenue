@@ -1,6 +1,6 @@
 # Theme, Player and Game-Integration Analysis (SA5)
 
-**Game:** Sili-Tubig: Task Avenue · **Version:** 1.2.0 · **Engine:** Godot 4.7.2 · **Platform:** Android (landscape), Windows for development
+**Game:** Sili-Tubig: Quiz Avenue · **Version:** 1.2.0 · **Engine:** Godot 4.7.2 · **Platform:** Android (landscape), Windows for development
 **Theme:** Board Games or Brain Games (trivia chase), built on the Filipino street game *sili-tubig*
 
 ## 1. Theme-to-Mechanics Justification

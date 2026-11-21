@@ -4,25 +4,37 @@ extends Control
 ## CHANGE PLAYER NAME window (NamePopup: SAVE, CANCEL, X, Esc, click outside).
 ## The background is the pixel city (title_runners.gd animates the kids).
 ## PLAY opens the PLAY window (close: X, Esc, or click outside) with:
-##   SOLO VS BOT  -> starts a round right away: you (Tubig) vs a Bot Sili
+##   SOLO VS BOT  -> you (Tubig) vs Bot Silis. If a saved Solo game is past
+##                   Round 1, the SOLO GAME FOUND window (solo_resume_modal.gd)
+##                   asks RESUME or NEW GAME first (data/solo_save.gd).
 ##   HOST GAME    -> opens HostModal (host_modal.tscn)
 ##   JOIN GAME    -> opens JoinModal (join_modal.tscn)
 ## The title and the buttons are PNG pictures in assets/ui/ — replace those
 ## files (or drag new ones into the Inspector) to change how they look.
-## LEADERBOARD opens the TOP PLAYERS window (close: X, Esc, or click outside).
-## It shows the leaderboard saved on this device
-## (data/leaderboard.gd). Leaderboard/.../Rows/RowTemplate is ONE row: the
-## script copies it for every player, so edit it to change every row.
+## LEADERBOARD opens the TOP PLAYERS window (scenes/leaderboard_modal.gd,
+## built in code in the same store look as Host / Join; close: X, Esc, or
+## click outside). It shows the leaderboard saved on this device.
 
-const Leaderboard := preload("res://data/leaderboard.gd")
 const HowToPlay := preload("res://data/how_to_play.gd")
 const TouchScroll := preload("res://scenes/touch_scroll.gd")
 const UiScale := preload("res://scenes/ui_scale.gd")
-const MAX_ROWS := 20
-const RANK_COLORS := [Color(1, 0.82, 0.3), Color(0.8, 0.84, 0.9), Color(0.85, 0.55, 0.3)]   # gold, silver, bronze
+const SoloSave := preload("res://data/solo_save.gd")
+const LeaderboardModal := preload("res://scenes/leaderboard_modal.gd")
+const SoloResumeModal := preload("res://scenes/solo_resume_modal.gd")
+
+var leaderboard: LeaderboardModal     # TOP PLAYERS window
+var resume_modal: SoloResumeModal   # SOLO GAME FOUND window
 
 
 func _ready() -> void:
+	leaderboard = LeaderboardModal.new()
+	add_child(leaderboard)
+	leaderboard.problem.connect(func(msg: String): $Menu/ErrorLabel.text = msg)
+	resume_modal = SoloResumeModal.new()
+	add_child(resume_modal)
+	resume_modal.resume_chosen.connect(_on_resume_solo)
+	resume_modal.new_game_chosen.connect(_on_new_solo)
+	resume_modal.back.connect(_show_play.bind(true))
 	# profile card (top-left) -> CHANGE PLAYER NAME window
 	$ProfileCard/HBox/NameLabel.text = GameState.player_name
 	$ProfileCard.pressed.connect(_show_name_popup.bind(true))
@@ -45,15 +57,13 @@ func _ready() -> void:
 	$CreditsDim.gui_input.connect(func(e): if e is InputEventMouseButton and e.pressed: _show_credits(false))
 	$VersionLabel.text = "v%s" % ProjectSettings.get_setting("application/config/version", "1.0")
 	# finger scrolling + a wide scrollbar for the long windows
-	for scroll in [$HowToPanel/Margin/VBox/Scroll, $CreditsPanel/Margin/VBox/Scroll, $Leaderboard/Margin/VBox/Scroll]:
+	for scroll in [$HowToPanel/Margin/VBox/Scroll, $CreditsPanel/Margin/VBox/Scroll]:
 		TouchScroll.setup(scroll)
 	get_viewport().size_changed.connect(_apply_layout)
 	_apply_layout()
 	GameState.reset_question_decks()   # back on the title screen = a new game session
 	$HowToPanel/Margin/VBox/CloseButton.pressed.connect(_show_how_to.bind(false))
 	$Menu/LeaderboardButton.pressed.connect(_show_leaderboard.bind(true))
-	$Leaderboard/Margin/VBox/Header/CloseButton.pressed.connect(_show_leaderboard.bind(false))
-	$LeaderboardDim.gui_input.connect(_on_leaderboard_dim_input)
 	$SettingsButton.pressed.connect(func(): $SettingsPanel.open())
 	_show_how_to(false)
 	_show_leaderboard(false)
@@ -112,8 +122,29 @@ func _on_play_dim_input(event: InputEvent) -> void:
 		_show_play(false)
 
 
+## SOLO VS BOT: ask RESUME / NEW GAME when a saved game is past Round 1,
+## otherwise start Round 1 right away.
 func _start_solo() -> void:
-	Network.play_solo(true)   # you (Tubig) vs the Bot Sili
+	var save := SoloSave.load_save(SoloSave.DEFAULT_MAP)
+	if save.get("round", 1) > 1:
+		_show_play(false)
+		resume_modal.open(save)
+		return
+	_begin_solo(1)
+
+
+func _on_resume_solo() -> void:
+	var save := SoloSave.load_save(SoloSave.DEFAULT_MAP)
+	_begin_solo(save.get("round", 1))
+
+
+func _on_new_solo() -> void:
+	SoloSave.save_round(1, SoloSave.DEFAULT_MAP)   # NEW GAME replaces the save
+	_begin_solo(1)
+
+
+func _begin_solo(round: int) -> void:
+	Network.play_solo(true, round)   # you (Tubig) vs the Bot Silis
 	get_tree().change_scene_to_file(GameState.GAME_SCENE)
 
 
@@ -124,43 +155,9 @@ func _open_lan_window(window: Control) -> void:
 
 func _show_leaderboard(open: bool) -> void:
 	if open:
-		_fill_leaderboard()   # always show the latest results
-	$Leaderboard.visible = open
-	$LeaderboardDim.visible = open
-
-
-func _on_leaderboard_dim_input(event: InputEvent) -> void:
-	# a click outside the window closes it
-	if event is InputEventMouseButton and event.pressed:
-		_show_leaderboard(false)
-
-
-func _fill_leaderboard() -> void:
-	var rows: VBoxContainer = $Leaderboard/Margin/VBox/Scroll/Rows
-	var template: Control = rows.get_node("RowTemplate")
-	template.visible = false   # the template is copied, never shown
-	for old in rows.get_children():
-		if old != template:
-			old.queue_free()
-	var ranking := Leaderboard.rankings()
-	if not Leaderboard.last_problem.is_empty():
-		$Menu/ErrorLabel.text = Leaderboard.last_problem
-		Leaderboard.last_problem = ""
-	$Leaderboard/Margin/VBox/Empty.visible = ranking.is_empty()
-	for i in min(ranking.size(), MAX_ROWS):
-		var r: Dictionary = ranking[i]
-		var row := template.duplicate()
-		row.visible = true
-		row.get_node("HBox/Rank").text = str(i + 1)
-		row.get_node("HBox/Name").text = r["name"]
-		row.get_node("HBox/Wins").text = str(r["wins"])
-		row.get_node("HBox/Points").text = str(r["points"])
-		var rank_color: Color = RANK_COLORS[i] if i < RANK_COLORS.size() else Color(0.62, 0.66, 0.76)
-		row.get_node("HBox/Rank").add_theme_color_override("font_color", rank_color)
-		if r["name"].to_lower() == GameState.player_name.to_lower():
-			row.get_node("HBox/Name").add_theme_color_override("font_color", Color(1, 0.88, 0.35))   # you
-		row.tooltip_text = "%s — %d games, %d wins, %d points" % [r["name"], r["games"], r["wins"], r["points"]]
-		rows.add_child(row)
+		leaderboard.open()   # always shows the latest results
+	else:
+		leaderboard.close()
 
 
 ## Window sizes and text sizes for this screen (bigger on phones, inside
@@ -170,7 +167,6 @@ func _apply_layout() -> void:
 	var mobile := GameState.is_mobile_ui()
 	_fit($HowToPanel, UiScale.modal_size(vp, Vector2(0.9, 0.92), Vector2(660, 500)))
 	_fit($CreditsPanel, UiScale.modal_size(vp, Vector2(0.9, 0.92), Vector2(680, 540)))
-	_fit($Leaderboard, UiScale.modal_size(vp, Vector2(0.62, 0.92), Vector2(360, 490)))
 	var body := UiScale.font(vp, 15)
 	var rules: RichTextLabel = $HowToPanel/Margin/VBox/Scroll/Rules
 	for key in ["normal_font_size", "bold_font_size", "italics_font_size"]:
@@ -225,9 +221,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif $HowToPanel.visible:
 		_show_how_to(false)
-		get_viewport().set_input_as_handled()
-	elif $Leaderboard.visible:
-		_show_leaderboard(false)
 		get_viewport().set_input_as_handled()
 	elif $CreditsPanel.visible:
 		_show_credits(false)

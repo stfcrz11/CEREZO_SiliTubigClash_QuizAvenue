@@ -9,8 +9,8 @@ extends "res://scenes/store_modal.gd"
 @export var need_players_text: String = "Need %d+ players"     # %d = minimum players
 @export var ready_text: String = "Ready!"
 
-@onready var ip_label: Label = $Center/Store/Body/VBox/HostCard/VBox/IpLabel
-@onready var ip_hint: Label = $Center/Store/Body/VBox/HostCard/VBox/Hint
+@onready var ip_label: Label = $Center/Store/Body/Scroll/VBox/HostCard/VBox/IpLabel
+@onready var ip_hint: Label = $Center/Store/Body/Scroll/VBox/HostCard/VBox/Hint
 @onready var start_button: TextureButton = $Center/Store/Counter/VBox/Buttons/StartButton
 
 
@@ -38,3 +38,26 @@ func _players_updated(count: int) -> void:
 		_set_status(need_players_text % Network.MIN_PLAYERS, waiting_color)
 	else:
 		_set_status(ready_text, good_color)
+
+
+## IP chalkboard and players side by side on wide screens (phones in
+## landscape, PC), one above the other on narrow ones.
+func _layout_parts(m: Dictionary, content_width: float) -> void:
+	var host_card: Control = $Center/Store/Body/Scroll/VBox/HostCard
+	var wide := content_width >= 700.0
+	body_box.vertical = not wide
+	host_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	players_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	host_card.size_flags_stretch_ratio = 2.0
+	players_card.size_flags_stretch_ratio = 3.0
+	host_card.size_flags_vertical = Control.SIZE_FILL
+	var caption: Label = $Center/Store/Body/Scroll/VBox/HostCard/VBox/Caption
+	caption.add_theme_font_size_override("font_size", m["small"])
+	ip_label.add_theme_font_size_override("font_size", m["big"])
+	ip_label.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY   # a long IP wraps, never cut
+	ip_hint.add_theme_font_size_override("font_size", m["hint"])
+	ip_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	$Center/Store/Body/Scroll/VBox/HostCard/VBox.add_theme_constant_override("separation", int(m["gap"] * 0.5))
+	# the hint wraps inside the chalkboard: give the board a real width
+	ip_hint.custom_minimum_size.x = 0.0
+	_size_png_button(start_button, m["button"])

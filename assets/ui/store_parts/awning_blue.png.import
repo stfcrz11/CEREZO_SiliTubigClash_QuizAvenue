@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dfggf866ro485"
-path="res://.godot/imported/android_fg_432.png-526e20f63fe71af06a18cf2a6814d49e.ctex"
+uid="uid://1w3e1b5ct3fg"
+path="res://.godot/imported/awning_blue.png-6c88ac3bf81cd4e6ccf6cba2a1d24948.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icon/android_fg_432.png"
-dest_files=["res://.godot/imported/android_fg_432.png-526e20f63fe71af06a18cf2a6814d49e.ctex"]
+source_file="res://assets/ui/store_parts/awning_blue.png"
+dest_files=["res://.godot/imported/awning_blue.png-6c88ac3bf81cd4e6ccf6cba2a1d24948.ctex"]
 
 [params]
 

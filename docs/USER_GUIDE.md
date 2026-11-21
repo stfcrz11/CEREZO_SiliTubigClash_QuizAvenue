@@ -1,14 +1,14 @@
-# Sili-Tubig: Task Avenue — User Guide
+# Sili-Tubig: Quiz Avenue — User Guide
 
 ## Install
-- **Android:** copy `SiliTubig_TaskAvenue.apk` to your phone, open it, and allow
+- **Android:** copy `SiliTubig_QuizAvenue.apk` to your phone, open it, and allow
   "install unknown apps" if asked. Hold the phone sideways.
 - **PC:** open the project folder in Godot 4.7 and press F5.
 
 ## Start
-1. Type your name (up to 16 letters) on the title screen.
+1. Tap the name card at the top left of the title screen to set your name (up to 12 letters).
 2. Press **PLAY**:
-   - **SOLO VS BOT:** you are the Tubig. 4 rounds from Easy to Labuyo (1–3 bots).
+   - **SOLO VS BOT:** you are the Tubig. 4 rounds from Easy to Labuyo (1–3 bots). Your round is saved; past Round 1 you are asked RESUME or NEW GAME.
    - **HOST GAME:** start a LAN game; your IP is shown on the chalkboard.
    - **JOIN GAME:** tap JOIN next to a game, or type the host's IP.
    Everyone must be on the same Wi-Fi or phone hotspot.

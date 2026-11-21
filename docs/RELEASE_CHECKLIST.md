@@ -17,7 +17,7 @@
 
 - [ ] Fill in the audio sources in `CREDITS.md` and `docs/RESPONSIBLE_DEVELOPMENT.md`
 - [ ] Copy the tileset's and template's license terms into `docs/RESPONSIBLE_DEVELOPMENT.md`
-- [ ] Export the Android APK (Project → Export → Android) as `build/SiliTubig_TaskAvenue.apk`
+- [ ] Export the Android APK (Project → Export → Android) as `build/SiliTubig_QuizAvenue.apk`
 - [ ] Uninstall the old app, install the new APK, run TC-01…TC-26 on the phone
 - [ ] Record the commit ID in README; tag the release: `git tag v1.2.0` then `git push origin v1.2.0`
 - [ ] Fill the acceptance summary in `TEST_PLAN.md` and the phone table in `PERFORMANCE.md`
