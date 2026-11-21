@@ -1,5 +1,5 @@
 extends Node2D
-## Sili-Tubig: Task Avenue — the maze round (solo or LAN).
+## Sili-Tubig: Quiz Avenue — the maze round (solo or LAN).
 ## 2-6 players over LAN. Silis (1 for 2-4 players, 2 for 5-6) chase; the
 ## Tubig team picks up "?" scrolls and must answer 10 Filipino-culture
 ## questions correctly before time runs out.
@@ -38,6 +38,8 @@ const ButtonStyle := preload("res://scenes/ui_button_style.gd")
 const BotSili := preload("res://scenes/bot_sili.gd")
 const UiScale := preload("res://scenes/ui_scale.gd")
 const RoundIntro := preload("res://scenes/round_intro.gd")
+const ResultPanel := preload("res://scenes/result_panel.gd")
+const SoloSave := preload("res://data/solo_save.gd")
 const COOLER_TEXTURE := preload("res://assets/props/cooler_stalls.png")
 const PEPPER_TEXTURE := preload("res://assets/props/bicol_pepper.png")
 
@@ -110,9 +112,10 @@ const STALL_NAMES := ["Halo-Halo", "Mais Con Yelo", "Sago't Gulaman", "Buko Pand
 @onready var help_alert: Control = $HUD/HelpAlert
 @onready var round_intro: Control = $HUD/RoundIntro       # role reveal + 3-2-1-GO before each round
 @onready var leave_modal: Control = $HUD/LeaveModal       # "LEAVE GAME?" confirmation
-@onready var end_panel: Control = $HUD/EndPanel
-@onready var play_again_button: Button = $HUD/EndPanel/Margin/VBox/Buttons/PlayAgainButton
-@onready var menu_button: Button = $HUD/EndPanel/Margin/VBox/Buttons/MenuButton
+## End-of-round result window (scenes/result_panel.gd, built in code).
+var end_panel: ResultPanel
+var play_again_button: Button
+var menu_button: Button
 
 var maze: Array[String] = []       # read from the Maze TileMapLayer: # wall, . road, P / S start
 var maze_origin := Vector2.ZERO     # world position of the maze's top-left corner
@@ -163,6 +166,11 @@ var _bots: Dictionary = {}          # host: bot peer id -> bot_sili.gd controlle
 
 func _ready() -> void:
 	randomize()
+	end_panel = ResultPanel.new()
+	$HUD.add_child(end_panel)
+	$HUD.move_child(end_panel, $HUD/SettingsPanel.get_index())   # under Settings / Leave, like before
+	play_again_button = end_panel.play_again_button
+	menu_button = end_panel.menu_button
 	Sound.stop_music()
 	# The HUD is hidden in the editor so it doesn't cover the map while you
 	# edit (click the eye next to "HUD" to see it); the game shows it here.
@@ -171,6 +179,7 @@ func _ready() -> void:
 		Network.play_solo()   # scene started directly (e.g. from the editor)
 	if Network.solo_bot:
 		questions_to_win = Network.solo_round_info()["questions"]
+		SoloSave.save_round(Network.solo_round)   # a round starts: save its number
 	_build_maze()
 	GameState.round_state = GameState.RoundState.READY
 	quiz_panel.choice_made.connect(_on_local_choice)
@@ -188,8 +197,6 @@ func _ready() -> void:
 	help_alert.answered.connect(_on_help_answer)
 	play_again_button.pressed.connect(_on_play_again)
 	menu_button.pressed.connect(_on_leave)
-	ButtonStyle.style_primary(play_again_button, Color(0.21, 0.69, 0.9))
-	ButtonStyle.style_secondary(menu_button, Color(0.38, 0.38, 0.46))
 	end_panel.visible = false
 	pause_label.visible = false
 	warning_label.text = ""
@@ -358,12 +365,7 @@ func _apply_ui_scale() -> void:
 	pause_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_effect_label.position = Vector2(inset["left"] + 16.0, bar.offset_bottom + 6.0)
 	_effect_label.add_theme_font_size_override("font_size", UiScale.font(vp, 16))
-	for l in [$HUD/EndPanel/Margin/VBox/StatsLabel]:
-		l.add_theme_font_size_override("font_size", UiScale.font(vp, 17))
-	$HUD/EndPanel/Margin/VBox/ResultLabel.add_theme_font_size_override("font_size", UiScale.font(vp, 30))
-	for b in [play_again_button, menu_button]:
-		b.custom_minimum_size = Vector2(150.0 * (1.3 if mobile else 1.0), UiScale.touch_target(vp, 44.0))
-		b.add_theme_font_size_override("font_size", UiScale.font(vp, 16))
+	end_panel.apply_layout()
 	help_alert.apply_ui_scale()
 
 
@@ -1827,14 +1829,14 @@ func _end_round(team_won: bool, title: String, stats: String, results: Array) ->
 	help_locked_by = 0
 	warning_label.text = ""
 	warning_glow.modulate.a = 0.0
-	var result: Label = $HUD/EndPanel/Margin/VBox/ResultLabel
+	var result: Label = end_panel.result_label
 	result.text = title
 	result.modulate = Color(0.5, 0.85, 1.0) if team_won else Color(1.0, 0.45, 0.4)
 	var me = player_by_id.get(multiplayer.get_unique_id())
 	var verdict := ""
 	if me:
 		verdict = "You win!" if me.is_tubig() == team_won else "You lose!"
-	$HUD/EndPanel/Margin/VBox/StatsLabel.text = verdict + "\n" + stats
+	end_panel.stats_label.text = verdict + "\n" + stats
 	# "game over" for everyone, then win or lose for this player
 	var over_len := Sound.play("game_over")
 	if me:
@@ -1844,7 +1846,7 @@ func _end_round(team_won: bool, title: String, stats: String, results: Array) ->
 		Leaderboard.record(results)   # saved on this device; shown on the title screen
 		for r in results:
 			if r["id"] == multiplayer.get_unique_id():
-				$HUD/EndPanel/Margin/VBox/StatsLabel.text += "\n\nYou earned +%d points (see TOP PLAYERS)" % Leaderboard.points_for(r)
+				end_panel.stats_label.text += "\n\nYou earned +%d points (see TOP PLAYERS)" % Leaderboard.points_for(r)
 	play_again_button.visible = multiplayer.is_server()
 	play_again_button.text = "Play Again (next Sili)" if Network.online else "Play Again"
 	menu_button.text = "Main Menu" if not Network.online else "Leave"
@@ -1852,20 +1854,26 @@ func _end_round(team_won: bool, title: String, stats: String, results: Array) ->
 		_solo_won = team_won
 		if team_won:
 			GameState.record_solo_clear(Network.solo_round)
+			# saved at once, so quitting from this screen keeps the progress
+			if Network.is_last_solo_round():
+				SoloSave.clear()                          # all rounds cleared
+			else:
+				SoloSave.save_round(Network.solo_round + 1)
+		# lost: the same round stays saved (retry)
 		var info := Network.solo_round_info()
 		if team_won and Network.is_last_solo_round():
-			$HUD/EndPanel/Margin/VBox/StatsLabel.text += "\n\nALL %d ROUNDS CLEARED! Kampeon ka!" % Network.SOLO_ROUNDS.size()
+			end_panel.stats_label.text += "\n\nALL %d ROUNDS CLEARED! Kampeon ka!" % Network.SOLO_ROUNDS.size()
 			play_again_button.text = "Play from Round 1"
 		elif team_won:
 			var next: Dictionary = Network.SOLO_ROUNDS[Network.solo_round]
-			$HUD/EndPanel/Margin/VBox/StatsLabel.text += "\n\n%s cleared! Next: %s (%d bot%s)" % [
+			end_panel.stats_label.text += "\n\n%s cleared! Next: %s (%d bot%s)" % [
 				info["name"], next["name"], next["bots"], "" if next["bots"] == 1 else "s"]
 			play_again_button.text = "Next Round"
 		else:
 			play_again_button.text = "Retry %s" % info["name"].get_slice(" - ", 0)
 	if not multiplayer.is_server():
-		$HUD/EndPanel/Margin/VBox/StatsLabel.text += "\n\nWaiting for the host to play again..."
-	end_panel.visible = true
+		end_panel.stats_label.text += "\n\nWaiting for the host to play again..."
+	end_panel.present("tubig" if team_won else "sili")
 
 
 func _on_play_again() -> void:
@@ -1896,13 +1904,13 @@ func _round_ended_by_host() -> void:
 	answer_popup.close()
 	help_alert.close()
 	pause_label.visible = false
-	var result: Label = $HUD/EndPanel/Margin/VBox/ResultLabel
+	var result: Label = end_panel.result_label
 	result.text = "GAME OVER — THE HOST LEFT"
 	result.modulate = Color(1.0, 0.75, 0.35)
-	$HUD/EndPanel/Margin/VBox/StatsLabel.text = "No winner this round.\nCorrect answers: %d / %d" % [correct_answers, questions_to_win]
+	end_panel.stats_label.text = "No winner this round.\nCorrect answers: %d / %d" % [correct_answers, questions_to_win]
 	play_again_button.visible = false
 	menu_button.text = "Main Menu"
-	end_panel.visible = true
+	end_panel.present("neutral")
 
 
 ## Clients: the connection to the host is gone (it may come after the end screen).
@@ -1911,10 +1919,13 @@ func _on_host_left() -> void:
 		return   # Network sends us to the title screen
 	play_again_button.visible = false
 	menu_button.text = "Main Menu"
-	var stats: Label = $HUD/EndPanel/Margin/VBox/StatsLabel
-	stats.text = stats.text.replace("\n\nWaiting for the host to play again...", "")
+	var stats: Label = end_panel.stats_label
+	stats.text = stats.text.replace("\n\nWaiting for the host to play again...", "") \
+		.replace("Waiting for the host to play again...", "").strip_edges()
 	if not stats.text.ends_with("The host left the game."):
-		stats.text += "\n\nThe host left the game."
+		stats.text += ("\n\n" if not stats.text.is_empty() else "") + "The host left the game."
+	stats.visible = true
+	menu_button.text = "MAIN MENU"
 
 
 ## LEAVE button (top bar). Who may leave during a round:

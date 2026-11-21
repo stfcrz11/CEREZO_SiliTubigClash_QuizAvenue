@@ -1,4 +1,4 @@
-# CREDITS (Sili-Tubig: TaskAvenue)
+# CREDITS (Sili-Tubig: Quiz Avenue)
 
 1. **Simple 32x32 City Tileset** by Acxa Rmz —
    https://acxaonpixelia.itch.io/simple-32x32-city-tileset

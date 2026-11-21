@@ -1,4 +1,4 @@
-# Sili-Tubig: Task Avenue
+# Sili-Tubig: Quiz Avenue
 
 Individual prototype for PEBSIT 004 LAB (MAD2) Preliminary Examination.
 Adopted, with the instructor's permission, from the group project
@@ -6,24 +6,60 @@ Adopted, with the instructor's permission, from the group project
 entry), where I served as tester and support developer.
 
 **Student:** Stefane B. Cerezo, BSIT 4A
-**Naming convention:** PEBSIT004_Prelim_Cerezo_TaskAvenue
+**Naming convention:** PEBSIT004_Prelim_Cerezo_SiliTubigQuizAvenue
 **Category:** Board Games or Brain Games (trivia chase)
 
 | Project information | |
 |---|---|
-| Game title | Sili-Tubig: Task Avenue |
-| Version | **1.2.0** (Android version code 3) — `application/config/version` in `project.godot` |
+| Game title | Sili-Tubig: Quiz Avenue (short name: Quiz Avenue; called "Task Avenue" before 1.2.0) |
+| Version | **1.2.0** (Android version code 4) — `application/config/version` in `project.godot` |
 | Theme | Board Games or Brain Games (trivia chase), built on the Filipino street game *sili-tubig* — see `docs/THEME_AND_DESIGN.md` |
 | Platform | Android phones (landscape, touch controls); Windows for development and LAN testing |
 | Engine | Godot 4.7.2-stable, GDScript |
-| Repository | https://github.com/stfcrz11/CEREZO_SiliTubigClash_TaskAvenue |
+| Repository | https://github.com/stfcrz11/CEREZO_SiliTubigClash_TaskAvenue (the repository keeps its old name) |
 | Current commit | run `git log -1 --format=%h` and record it here for each weekly submission |
-| Install | Android: copy `build/SiliTubig_TaskAvenue.apk` to the phone and open it (allow "install unknown apps"). PC: open the folder in Godot 4.7 and press F5 |
+| Install | Android: copy `build/SiliTubig_QuizAvenue.apk` to the phone and open it (allow "install unknown apps"). PC: open the folder in Godot 4.7 and press F5 |
 | Known limitations | see "Incomplete / not attempted" and "Known issues" below |
 
 Course documents (MOBILE DEV 002, Weeks 13-18) are in [`docs/`](docs/): theme and
 design, data and security, test plan, performance, usability test kit,
 responsible development (AI and asset disclosure), user guide, release checklist.
+
+## New name: Quiz Avenue
+
+The game is now **Sili-Tubig: Quiz Avenue** (it was *Task Avenue*). The
+window title, the Android app name, the title logo and the credits use the
+new name. What stays the same, on purpose:
+
+- The Android package id `com.cerezo.silitubig.taskavenue`, so the new APK
+  **updates** the installed game instead of installing a second copy.
+- Saved data on PC: `project.godot` keeps `user://` in the old folder
+  (`%APPDATA%\Godot\app_userdata\Sili-Tubig- Task Avenue`), so your name, settings, Solo progress and
+  leaderboard are still there.
+- The LAN discovery message (`SILITUBIG_TASKAVENUE` in
+  `autoloads/network.gd`), so devices on this version still find each other.
+
+## What's new in this update (1.2.0)
+
+- **Solo vs Bot remembers your round.** When you win a round, the next round
+  is saved right away. Next time you press SOLO VS BOT past Round 1, a
+  **SOLO GAME FOUND** window shows "Last played: Round 3 - Hard" and asks
+  **RESUME** (start that round again) or **NEW GAME** (back to Round 1). You
+  must pick one; the Back button returns to the PLAY window.
+- **New result screens.** "TUBIG WINS!" and "SILI WINS!" now look like the
+  Host / Join store: blue or red awning and title plank, a water drop or an
+  ice block, and the stats (reason, correct answers, scrolls opened, time
+  left) on a chalkboard. The window drops in with a short bounce. Buttons:
+  NEXT ROUND / RETRY ROUND N / MAIN MENU (they work as before).
+- **Bigger Host, Join and Leaderboard windows on phones.** About 92% of the
+  screen height, text about 4% of the screen height, buttons and the close
+  button at least 64 px tall. Host shows the IP and the players side by side;
+  Join has 64 px game rows (tap anywhere on a row), a 72 px IP box with a
+  number keypad, and slides up when the phone keyboard opens. TOP PLAYERS
+  now uses the same store look, with 56 px+ rows that scroll with a finger.
+- **Player name card.** Your name is shown on a card at the top left of the
+  title screen; tap it to change it (CHANGE PLAYER NAME window, max 12
+  characters).
 
 ## Concept
 
@@ -98,11 +134,17 @@ data/
   questions.gd        Question lists: 49 general (culture, food, places),
                       16 hard (self-thaw), 14 bugtong riddles (peppers)
   leaderboard.gd      Points and rankings, saved on this device
+  solo_save.gd        Solo vs Bot progress (user://solo_save.cfg)
 scenes/
-  title_screen.*      Menu, How to Play, Leaderboard pop-up
+  title_screen.*      Menu, name card, How to Play, Credits
   host_modal.*        "Host a game" window (sari-sari store): IP, player slots, Start
   join_modal.*        "Join a game" window: games found nearby, type-the-IP
-  store_modal.gd      Shared parts of both windows (slots, status, close)
+  store_modal.gd      Shared parts of both windows (slots, status, close, sizes)
+  pixel_store.gd      The shared sari-sari store window (roof, awning, title
+                      plank, shelves, counter) and its screen-based sizes
+  leaderboard_modal.gd  TOP PLAYERS window (store look, scrolling rows)
+  solo_resume_modal.gd  SOLO GAME FOUND window (RESUME / NEW GAME)
+  result_panel.gd     End-of-round TUBIG WINS / SILI WINS window
   png_button.gd       Buttons made from PNG pictures (hover glow, press)
   city_map.tscn       The maze, painted with tiles (edit it in the editor)
   maze_game.*         The round: camera, scrolls, quizzes (scroll, rescue,
@@ -136,12 +178,13 @@ answers directly.
 ## Setup and run
 
 1. Open Godot 4.7 and import this folder.
-2. Type your name on the title screen, then press Run (F5) and **PLAY**. The
-   PLAY window has three choices:
+2. Press Run (F5). Tap the name card at the top left to set your name, then
+   press **PLAY**. The PLAY window has three choices:
    - **SOLO VS BOT** — you are the Tubig in 4 rounds, easy to difficult:
 	 Round 1 Easy (1 bot), 2 Medium (1 bot), 3 Hard (2 bots), 4 Labuyo
 	 (3 bots). Win to go to the next round, lose to retry. Solo rounds don't
-	 go on the leaderboard.
+	 go on the leaderboard. Your round is saved: if you stopped past Round 1,
+	 you are asked RESUME or NEW GAME first.
    - **HOST GAME** — host a LAN game on one PC.
    - **JOIN GAME** — on other devices on the same network, press **JOIN** next
 	 to the game in the list (or type the IP shown in the host's window).
@@ -168,7 +211,7 @@ Instances → 2 or more, then Run. Host in one window, join from the others.
 | Accept / refuse a help request | Y / N (or the buttons) |
 | Pause / Resume | Esc or the pause button, top right (host only; pauses everyone). The game also pauses when the phone app goes to the background |
 | Leave the game | Door button, top right → LEAVE GAME? window (STAY / LEAVE; Esc = STAY). Solo: any time (the round pauses while it is open). LAN host: any time, ends the game for everyone. LAN players: only after the round is over |
-| Close a window | Esc |
+| Close a window | Esc (the SOLO GAME FOUND window: Esc / Back returns to PLAY) |
 | Settings (audio, controls) | Gear button, top right |
 | **Phone:** move | Drag on the right half of the screen (joystick — phones / touch screens only) |
 | **Phone:** sprint | Hold the RUN button (bottom left) |
@@ -232,6 +275,10 @@ Phones show only touch instructions and desktops only keyboard instructions
   confirmation window; role reveal + synced countdown before every round;
   no repeated questions in a session; 2 players = both Tubig + a bot Sili;
   the "Tubig is answering" notice was removed
+- **v1.2 (Quiz Avenue update):** renamed to Quiz Avenue; Solo vs Bot progress
+  saved with a RESUME / NEW GAME window; store-style pixel result screens;
+  bigger phone-friendly Host, Join and TOP PLAYERS windows; name card on the
+  title screen
 
 ## Tested (Godot 4.7.2, several game instances on one PC over ENet)
 
@@ -251,7 +298,7 @@ Phones show only touch instructions and desktops only keyboard instructions
 - No reconnect if a player drops
 - No Filipino voice callouts yet
 - Bots only play Sili (no bot Tubig teammates)
-- One maze only
+- One maze only (Solo saves are stored under the map id `classic_maze`)
 - Leaderboard is saved per device and matches players by name
 
 ## Known issues
@@ -300,21 +347,57 @@ Phones show only touch instructions and desktops only keyboard instructions
 
 See `PROJECT_STATE.md` for the full list (cause, fix and result of each).
 
+## Build and export
+
+Export presets are in `export_presets.cfg`. There is one preset, **Android**
+(APK, no Gradle build, ARM 32/64-bit, min Android 7.0). There is no Windows
+preset yet; on PC, run the project from the Godot editor.
+
+```
+godot --headless --path . --export-debug "Android" build/SiliTubig_QuizAvenue.apk
+```
+
+- Needs the Godot 4.7.2 Android export templates, the Android SDK and a JDK
+  (Editor Settings > Export > Android).
+- The APK is signed with the Godot **debug** key. The earlier APKs of this
+  game were signed with the same key, so it installs as an update over them.
+- For a release build, set a release keystore in Project > Export > Android
+  (or the environment variables `GODOT_ANDROID_KEYSTORE_RELEASE_PATH`,
+  `GODOT_ANDROID_KEYSTORE_RELEASE_USER`, `GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD`)
+  and use `--export-release`. Never commit a keystore or its password.
+- `build/`, `*.apk`, `*.aab` and keystores are listed in `.gitignore`.
+
 ## Build status
 
-Attempted export target: **Android (debug APK)** — `build/SiliTubig_TaskAvenue.apk`
-Result (success / documented error): **Success** (2026-09-27, Godot 4.7.2).
-- Rebuilt 2026-09-27 with audio, settings and touch controls: 66 MB,
-  package `com.cerezo.silitubig.taskavenue`, version 1.0, min Android 7.0
-  (API 24), ARM 32/64-bit, signed with the debug key (verified with apksigner)
+Latest export: **Android (debug APK)** — `build/SiliTubig_QuizAvenue.apk`
+Result: **Success** (2026-11-21, Godot 4.7.2), 72.2 MB, no export warnings.
+- Package `com.cerezo.silitubig.taskavenue`, label "Sili-Tubig: Quiz Avenue",
+  version 1.2.0, version code 4, min Android 7.0 (API 24), target API 36,
+  signed with the debug key (checked with apksigner; same certificate as the
+  earlier APKs)
 - Permissions: Internet, network/Wi-Fi state, Wi-Fi multicast (for LAN play)
-- First attempt failed with "ETC2/ASTC texture compression is required for
-  Android export"; fixed by enabling Import ETC2 ASTC in Project Settings.
+- Earlier: the first Android export (2026-09-27) failed with "ETC2/ASTC
+  texture compression is required for Android export"; fixed by enabling
+  Import ETC2 ASTC in Project Settings.
 - Playable on a phone: on-screen joystick + RUN button, tap for answers and
-  buttons, Back button = Esc. Not yet installed on a real phone (touch was
-  tested with simulated touches on PC). App icon: the title logo
-  (`assets/icon/`, made by `tools/art/make_icon.py`), also used as the Android
-  launcher icon and the Windows .ico.
+  buttons, Back button = Esc. App icon: the title logo (`assets/icon/`, made
+  by `tools/art/make_icon.py`), also the Windows .ico.
+
+## Changelog
+
+### 1.2.0 — Quiz Avenue update (version code 4)
+
+- Renamed to **Sili-Tubig: Quiz Avenue** (window title, Android app name,
+  title logo, credits). Package id, PC save folder and LAN discovery
+  message unchanged so updates and saves keep working.
+- Solo vs Bot progress saved per map (`data/solo_save.gd`); SOLO GAME FOUND
+  window with RESUME / NEW GAME (`scenes/solo_resume_modal.gd`).
+- Result screens redrawn in the store style with icons, a chalkboard stats
+  table and a drop-in animation (`scenes/result_panel.gd`).
+- Host, Join and TOP PLAYERS sized from the screen height for phones; one
+  shared store window (`scenes/pixel_store.gd`, roof and awning pieces from
+  `tools/art/make_store_parts.py`).
+- Name card and CHANGE PLAYER NAME window on the title screen.
 
 ## Authorized assets
 
@@ -334,14 +417,18 @@ Result (success / documented error): **Success** (2026-09-27, Godot 4.7.2).
   and Tubig outfits in `assets/characters/*_sheet.png` were painted onto the
   template by `tools/art/make_characters.py`.
 - **Props, scroll, buttons and store windows** (jeepney, tricycle, post,
-  Halo-Halo coolers, Bicol Express pepper, ice block) were made for this
-  project with Python scripts (`tools/art/make_props.py` for the new ones).
+  Halo-Halo coolers, Bicol Express pepper, ice block, store roof and awning
+  pieces, water drop, name-card icons) were made for this project with
+  Python scripts (`tools/art/make_props.py`, `make_ui.py`,
+  `make_store_parts.py`, `make_profile_ui.py`).
 - **Audio** (`assets/audio/`, 11 MP3 files: title music, answering loop,
   button click, game start, correct, wrong, help alert, Sili nearby,
   game over, win, lose): [add source / author / license].
-- **Fonts:** Godot's default font in the game. Text inside the generated
-  button pictures uses the Windows fonts Arial Rounded MT Bold and Arial
-  Black.
+- **Fonts:** a 5x7 pixel font drawn for this game
+  (`assets/fonts/pixel5x7.fnt`, made by `tools/art/make_pixel_font.py`) for
+  window titles, code-drawn buttons and the result screens; Godot's default
+  font for body text. Text inside the PNG buttons is drawn pixel by pixel by
+  `tools/art/make_ui.py`.
 - **Questions** are original, written for this game.
 - If art from the group project is added later, carry forward the
   attribution in the group repo's `CREDITS.md` (EsriEsra, LimeZu, Crusenho,

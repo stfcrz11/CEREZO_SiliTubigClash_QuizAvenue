@@ -60,8 +60,8 @@ func _process(_d: float) -> bool:
 				done_tap = true
 				t_round = frames
 			if done_tap and frames == t_round + 90:
-				print("client END: ", game.get_node("HUD/EndPanel/Margin/VBox/ResultLabel").text, " | ",
-					game.get_node("HUD/EndPanel/Margin/VBox/StatsLabel").text.replace("\n", " / "),
+				print("client END: ", game.end_panel.result_label.text, " | ",
+					game.end_panel.stats_label.text.replace("\n", " / "),
 					" | menu button: ", game.menu_button.text, " | leave disabled: ", leave_btn.disabled,
 					" | still in game scene: ", current_scene.name == "MazeGame")
 				return true

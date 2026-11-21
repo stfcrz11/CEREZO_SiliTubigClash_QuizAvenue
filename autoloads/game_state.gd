@@ -161,7 +161,7 @@ func record_solo_clear(round: int) -> void:
 ## "Reset my data": deletes everything this game saved on the device (name,
 ## settings, solo progress, leaderboard) and goes back to the defaults.
 func reset_all_data() -> void:
-	for path in [SETTINGS_PATH, "user://leaderboard.cfg", "user://leaderboard.cfg.bad"]:
+	for path in [SETTINGS_PATH, "user://leaderboard.cfg", "user://leaderboard.cfg.bad", "user://solo_save.cfg"]:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	player_name = "Player"
