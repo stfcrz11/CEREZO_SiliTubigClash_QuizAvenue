@@ -1,0 +1,17 @@
+{
+  "name": "quiz-avenue-relay",
+  "version": "1.0.0",
+  "description": "Room-code relay for Sili-Tubig: Quiz Avenue online play",
+  "main": "relay.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node relay.js"
+  },
+  "dependencies": {
+    "ws": "8.18.0"
+  }
+}

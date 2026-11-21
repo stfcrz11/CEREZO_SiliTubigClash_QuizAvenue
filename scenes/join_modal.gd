@@ -4,6 +4,8 @@ extends "res://scenes/store_modal.gd"
 ## To customize: open join_modal.tscn, click "JoinModal" for the texts and
 ## colors in the Inspector, or click any node to change its look.
 ## FoundList/GameTemplate is ONE found game: the game copies it.
+## ONLINE ROOM CODE box (made from a copy of the IP box, shown when a relay
+## server is set in data/online_config.gd): join a friend on any network.
 
 @export_group("Texts")
 @export var join_hint_text: String = "Pick a game or type an IP"
@@ -16,6 +18,11 @@ extends "res://scenes/store_modal.gd"
 var connected: bool = false
 var _dots_time: float = 0.0
 var _kb_shift: float = 0.0      # how far the window is moved up for the phone keyboard
+var code_card: Control          # ONLINE ROOM CODE box
+var code_edit: LineEdit
+
+const OnlineConfig := preload("res://data/online_config.gd")
+const WAKING_TEXT := "Waking up the online server (can take up to a minute)..."
 
 @onready var find_card: Control = $Center/Store/Body/Scroll/VBox/FindCard
 @onready var searching: Label = $Center/Store/Body/Scroll/VBox/FindCard/VBox/Header/Searching
@@ -32,6 +39,7 @@ func _ready() -> void:
 	ip_edit.text_submitted.connect(_connect_to)
 	# phones: a number pad with a "." key (digits and periods for an IP)
 	ip_edit.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER_DECIMAL
+	_make_code_card()
 	Network.connected_to_host.connect(_on_connected)
 	Network.connection_failed.connect(_on_connection_failed)
 	Network.hosts_found_changed.connect(_refresh_found)
@@ -42,14 +50,50 @@ func open() -> void:
 	Network.leave()
 	Network.start_listening()
 	_show_parts()
-	_set_status(join_hint_text, hint_color)
+	_set_status("Pick a game, or type a room code or IP" if OnlineConfig.is_configured() else join_hint_text, hint_color)
 	_refresh_found()
 
 
+## The ONLINE ROOM CODE box: a copy of the IP box placed above it.
+func _make_code_card() -> void:
+	code_card = ip_card.duplicate()
+	code_card.name = "CodeCard"
+	body_box.add_child(code_card)
+	body_box.move_child(code_card, ip_card.get_index())
+	code_card.get_node("VBox/Label").text = "ONLINE ROOM CODE (any network)"
+	code_edit = code_card.get_node("VBox/IpRow/IpEdit")
+	code_edit.name = "CodeEdit"
+	code_edit.placeholder_text = "e.g. K7PQ2"
+	code_edit.max_length = 8
+	code_edit.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_DEFAULT
+	code_edit.text_changed.connect(func(t: String):
+		# codes are capital letters / digits: type in any case
+		var up := t.to_upper()
+		if up != t:
+			var caret := code_edit.caret_column
+			code_edit.text = up
+			code_edit.caret_column = caret)
+	code_edit.text_submitted.connect(_join_code)
+	code_card.get_node("VBox/IpRow/ConnectButton").pressed.connect(func(): _join_code(code_edit.text))
+	for edit in [ip_edit, code_edit]:
+		edit.focus_entered.connect(func(): body_scroll.ensure_control_visible.call_deferred(edit.get_parent()))
+
+
+func _join_code(code: String) -> void:
+	code = code.strip_edges().to_upper()
+	if code.is_empty():
+		_set_status("Type a room code first", error_color)
+		return
+	_set_status("Connecting to the online server...", waiting_color)
+	if Network.join_online(code) != OK:
+		_set_status(Network.last_error, error_color)
+
+
 func _show_parts() -> void:
-	# before connecting: games list + IP box. After: the player slots.
+	# before connecting: games list + code box + IP box. After: the player slots.
 	find_card.visible = not connected
 	ip_card.visible = not connected
+	code_card.visible = not connected and OnlineConfig.is_configured()
 	players_card.visible = connected
 	visible = true
 
@@ -70,11 +114,13 @@ func _layout_parts(m: Dictionary, _content_width: float) -> void:
 	game_template.get_node("HBox/Texts/Name").add_theme_font_size_override("font_size", m["body"])
 	game_template.get_node("HBox/Texts/Info").add_theme_font_size_override("font_size", m["small"])
 	_size_png_button(game_template.get_node("HBox/JoinButton"), m["button"])
-	$Center/Store/Body/Scroll/VBox/IpCard/VBox/Label.add_theme_font_size_override("font_size", m["body"])
-	$Center/Store/Body/Scroll/VBox/IpCard/VBox/IpRow.add_theme_constant_override("separation", int(m["gap"]))
-	ip_edit.custom_minimum_size.y = maxf(72.0, roundf(m["vh"] * 72.0 / 640.0))
-	ip_edit.add_theme_font_size_override("font_size", m["body"] + 4)
-	_size_png_button($Center/Store/Body/Scroll/VBox/IpCard/VBox/IpRow/ConnectButton, m["button"])
+	for card in [ip_card, code_card]:
+		card.get_node("VBox/Label").add_theme_font_size_override("font_size", m["body"])
+		card.get_node("VBox/IpRow").add_theme_constant_override("separation", int(m["gap"]))
+		var edit: LineEdit = card.get_node("VBox/IpRow").get_child(0)
+		edit.custom_minimum_size.y = maxf(72.0, roundf(m["vh"] * 72.0 / 640.0))
+		edit.add_theme_font_size_override("font_size", m["body"] + 4)
+		_size_png_button(card.get_node("VBox/IpRow/ConnectButton"), m["button"])
 	_refresh_found()   # row copies pick up the new sizes
 
 
@@ -84,6 +130,8 @@ func _process(delta: float) -> void:
 		searching.text = "Searching" + ".".repeat(1 + int(_dots_time * 2.0) % 3)
 	if visible:
 		_follow_keyboard(delta)
+		if not connected and Network.relay_connecting_seconds() > 5.0 and status.text != WAKING_TEXT:
+			_set_status(WAKING_TEXT, waiting_color)
 
 
 ## Phones: when the on-screen keyboard is up, slide the window up just
@@ -95,10 +143,11 @@ func _follow_keyboard(delta: float) -> void:
 	if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
 		kb_px = float(DisplayServer.virtual_keyboard_get_height())
 	var target := 0.0
-	if kb_px > 0.0 and ip_card.visible and ip_edit.has_focus():
+	var focused: LineEdit = ip_edit if ip_edit.has_focus() else (code_edit if code_edit.has_focus() else null)
+	if kb_px > 0.0 and focused and focused.is_visible_in_tree():
 		var vp := get_viewport()
 		var kb := kb_px / UiScale.content_scale(vp)          # screen pixels -> UI units
-		var row: Control = $Center/Store/Body/Scroll/VBox/IpCard/VBox/IpRow
+		var row: Control = focused.get_parent()
 		var bottom := row.get_global_rect().end.y + _kb_shift  # where it is without the shift
 		var free_bottom := vp.get_visible_rect().size.y - kb - 12.0
 		target = clampf(bottom - free_bottom, 0.0, store.get_global_rect().position.y + _kb_shift)

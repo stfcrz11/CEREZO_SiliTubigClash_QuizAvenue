@@ -1,6 +1,11 @@
 extends Node
-## LAN networking (Godot ENet). The host is the server and also plays as
-## P1. Clients join by picking a discovered host or typing its IP.
+## Networking. The host is the server and also plays as P1.
+##   LAN (Godot ENet): clients join by picking a discovered host or typing
+##     its IP (same Wi-Fi / hotspot).
+##   ONLINE (room codes): every device connects out to the relay server
+##     (server/relay/, address in data/online_config.gd) and the host gets a
+##     short code; friends on any network type it (autoloads/relay_peer.gd).
+## The game code above this file works the same in both modes.
 ## The host is authoritative for Silis, scrolls, questions, timer and
 ## catches; every device moves only its own Tubig.
 
@@ -9,6 +14,11 @@ signal connected_to_host
 signal connection_failed(reason: String)
 signal hosts_found_changed
 signal host_left            # the host closed the game (clients only)
+signal room_code_ready(code: String)   # online host: the relay gave us a room code
+
+const RelayPeer := preload("res://autoloads/relay_peer.gd")
+const OnlineConfig := preload("res://data/online_config.gd")
+const NOT_SET_UP := "Online play is not set up yet (no relay server address)."
 
 const GAME_PORT := 7777
 const DISCOVERY_PORT := 7778
@@ -40,6 +50,8 @@ var ready_peers: Dictionary = {}    # host: peers whose maze scene has loaded
 var round_number: int = 0           # host: used to rotate the Sili role
 var solo_bot: bool = false          # SOLO VS BOT: you are Tubig, the computer is Sili
 var solo_round: int = 1             # SOLO VS BOT: which round of SOLO_ROUNDS (1-4)
+var relay_mode: bool = false        # online game through the relay (room codes)
+var room_code: String = ""          # online host: the code friends type
 
 signal peer_ready(id: int)
 
@@ -113,6 +125,84 @@ func host_game() -> Error:
 	return OK
 
 
+## ONLINE: host a game on the relay server; room_code_ready(code) follows
+## (or connection_failed(reason) if the server can't be reached).
+func host_online() -> Error:
+	leave()
+	if not OnlineConfig.is_configured():
+		last_error = NOT_SET_UP
+		return ERR_UNCONFIGURED
+	var peer := RelayPeer.new()
+	var err := peer.start_host(OnlineConfig.relay_url())
+	if err != OK:
+		last_error = peer.last_reason
+		return err
+	peer.room_ready.connect(_on_room_ready)
+	peer.relay_failed.connect(_on_relay_failed)
+	multiplayer.multiplayer_peer = peer
+	players = {1: 0}
+	player_names = {1: GameState.player_name}
+	online = true
+	relay_mode = true
+	host_id = randi()
+	round_number = randi() % MAX_PLAYERS   # random first Sili
+	GameState.reset_question_decks()       # a new lobby = a new game session
+	players_changed.emit()
+	return OK
+
+
+## ONLINE: join the game with this room code (connected_to_host or
+## connection_failed(reason) follows).
+func join_online(code: String) -> Error:
+	leave()
+	code = code.strip_edges().to_upper()
+	if code.is_empty():
+		last_error = "Type a room code first."
+		return ERR_INVALID_PARAMETER
+	if not OnlineConfig.is_configured():
+		last_error = NOT_SET_UP
+		return ERR_UNCONFIGURED
+	var peer := RelayPeer.new()
+	var err := peer.start_join(OnlineConfig.relay_url(), code)
+	if err != OK:
+		last_error = peer.last_reason
+		return err
+	peer.relay_failed.connect(_on_relay_failed)
+	multiplayer.multiplayer_peer = peer
+	online = true
+	relay_mode = true
+	return OK
+
+
+## Seconds spent reaching the relay so far (-1 when not connecting online).
+## A free server that was asleep can take up to a minute to wake up.
+func relay_connecting_seconds() -> float:
+	var peer := multiplayer.multiplayer_peer as RelayPeer
+	if relay_mode and peer and peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTING:
+		return peer.connecting_seconds()
+	return -1.0
+
+
+func _on_room_ready(code: String) -> void:
+	room_code = code
+	room_code_ready.emit(code)
+
+
+## The relay connection failed or dropped. Guests are handled by Godot's
+## connection_failed / server_disconnected; the host is told here.
+func _on_relay_failed(reason: String) -> void:
+	last_error = reason
+	if not is_host() or not relay_mode:
+		return
+	if game_started:
+		# mid-game: everyone is gone, back to the title (after this poll)
+		(func():
+			leave()
+			get_tree().change_scene_to_file(GameState.TITLE_SCENE)).call_deferred()
+	else:
+		connection_failed.emit(reason)
+
+
 func join_game(ip: String) -> Error:
 	leave()
 	var peer := ENetMultiplayerPeer.new()
@@ -133,6 +223,8 @@ func leave() -> void:
 	players.clear()
 	player_names.clear()
 	online = false
+	relay_mode = false
+	room_code = ""
 	solo_bot = false
 	game_started = false
 
@@ -245,7 +337,13 @@ func _on_connected_to_server() -> void:
 
 
 func _on_connection_failed() -> void:
-	last_error = "Could not connect. Check the IP and that you are on the same Wi-Fi/hotspot."
+	var peer := multiplayer.multiplayer_peer as RelayPeer
+	if relay_mode and peer and not peer.last_reason.is_empty():
+		last_error = peer.last_reason         # e.g. "No game with that code."
+	elif relay_mode:
+		last_error = "Could not reach the online server. Check your internet connection."
+	else:
+		last_error = "Could not connect. Check the IP and that you are on the same Wi-Fi/hotspot."
 	leave()
 	connection_failed.emit(last_error)
 

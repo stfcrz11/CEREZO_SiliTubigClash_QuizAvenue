@@ -1,0 +1,10 @@
+# Render blueprint for the online relay (server/relay). See server/relay/README.md.
+services:
+  - type: web
+    name: quiz-avenue-relay
+    runtime: node
+    plan: free
+    rootDir: server/relay
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
