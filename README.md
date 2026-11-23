@@ -16,7 +16,7 @@ entry), where I served as tester and support developer.
 | Theme | Board Games or Brain Games (trivia chase), built on the Filipino street game *sili-tubig* — see `docs/THEME_AND_DESIGN.md` |
 | Platform | Android phones (landscape, touch controls); Windows for development and LAN testing |
 | Engine | Godot 4.7.2-stable, GDScript |
-| Repository | https://github.com/stfcrz11/CEREZO_SiliTubigClash_TaskAvenue (the repository keeps its old name) |
+| Repository | https://github.com/stfcrz11/CEREZO_SiliTubigClash_QuizAvenue |
 | Current commit | run `git log -1 --format=%h` and record it here for each weekly submission |
 | Install | Android: copy `build/SiliTubig_QuizAvenue.apk` to the phone and open it (allow "install unknown apps"). PC: open the folder in Godot 4.7 and press F5 |
 | Known limitations | see "Incomplete / not attempted" and "Known issues" below |
