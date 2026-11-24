@@ -45,6 +45,8 @@ var slot: int = 0
 var role: String = "tubig"          # "tubig" or "sili"
 var stamina: float = max_stamina
 var frozen: bool = false            # caught by a Sili
+var freezes: int = 0                # times caught this round (each one costs a heart)
+var out: bool = false               # used up every heart: stays frozen, can't be saved
 var answering: bool = false         # answering a question: can't move, can't be tagged
 var frozen_time: float = 0.0
 var immune_time: float = 0.0
@@ -298,7 +300,7 @@ func can_tag() -> bool:
 func can_be_rescued(min_frozen_time: float) -> bool:
 	# a caught Tubig must stay frozen a moment, so a teammate standing
 	# right beside them cannot undo the tag in the same instant
-	return frozen and frozen_time >= min_frozen_time
+	return frozen and not out and frozen_time >= min_frozen_time
 
 
 func get_stamina_ratio() -> float:
@@ -320,13 +322,16 @@ func effect_text() -> String:
 
 
 # ---- called on every device by the host's RPCs ----
-func set_caught() -> void:
+## max_freezes: caught this many times = OUT (no rescue, no self-thaw).
+func set_caught(max_freezes: int = 3) -> void:
 	frozen = true
+	freezes += 1
+	out = freezes >= max_freezes
 	frozen_time = 0.0
 	shield_time = 0.0
 	body.self_modulate = CAUGHT_TINT
 	_ice.visible = true
-	name_label.text = "SAVE %s!" % Network.player_name_of(peer_id)
+	name_label.text = _frozen_label()
 	alert_label.visible = false
 
 
@@ -344,7 +349,13 @@ func set_answering(on: bool) -> void:
 		name_label.text = "%s  ANSWERING..." % Network.player_name_of(peer_id)
 		alert_label.visible = false
 	else:
-		name_label.text = ("SAVE %s!" % Network.player_name_of(peer_id)) if frozen else _label()
+		name_label.text = _frozen_label() if frozen else _label()
+
+
+func _frozen_label() -> String:
+	if out:
+		return "%s is OUT" % Network.player_name_of(peer_id)
+	return "SAVE %s!" % Network.player_name_of(peer_id)
 
 
 func give_grace(seconds: float) -> void:

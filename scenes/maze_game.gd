@@ -91,6 +91,7 @@ const STALL_NAMES := ["Halo-Halo", "Mais Con Yelo", "Sago't Gulaman", "Buko Pand
 @export var team_self_thaws: int = 1           # per Tubig, when teammates are too far
 @export var self_thaw_wait: float = 5.0        # frozen this long with no teammate near
 @export var self_thaw_far: float = 240.0       # "no teammate near" = none within 6 tiles
+@export var max_freezes: int = 3               # hearts: caught this many times = OUT
 
 @onready var maze_layer: TileMapLayer = $Map/Maze
 @onready var starts_root: Node2D = $Map/Starts
@@ -98,20 +99,21 @@ const STALL_NAMES := ["Halo-Halo", "Mais Con Yelo", "Sago't Gulaman", "Buko Pand
 @onready var scrolls_root: Node2D = $Scrolls
 @onready var actors_root: Node2D = $Actors
 @onready var round_timer: Timer = $RoundTimer
-@onready var score_label: Label = $HUD/TopBar/ScoreLabel
-@onready var timer_label: Label = $HUD/TopBar/TimerLabel
-@onready var frozen_label: Label = $HUD/TopBar/FrozenLabel   # Sili goal: freeze them ALL
-@onready var mode_label: Label = $HUD/TopBar/ModeLabel
+@onready var score_label: Label = $HUD/TopBar/Left/ScoreRow/ScoreLabel   # scroll icon + "0/6"
+@onready var lives_box: VBoxContainer = $HUD/TopBar/Left/Lives      # one name + hearts row per Tubig
+@onready var timer_label: Label = $HUD/TopBar/Center/TimerLabel
+@onready var mode_label: Label = $HUD/TopBar/Center/ModeLabel      # e.g. "Easy vs 1 Bot"
 @onready var warning_label: Label = $HUD/WarningLabel
 @onready var warning_glow: Control = $HUD/WarningGlow
 @onready var message_label: Label = $HUD/MessageLabel
-@onready var pause_label: Label = $HUD/PauseLabel
 @onready var minimap: Control = $HUD/Minimap
 @onready var quiz_panel: Control = $HUD/QuizPanel
 @onready var answer_popup: Control = $HUD/AnswerPopup
 @onready var help_alert: Control = $HUD/HelpAlert
 @onready var round_intro: Control = $HUD/RoundIntro       # role reveal + 3-2-1-GO before each round
 @onready var leave_modal: Control = $HUD/LeaveModal       # "LEAVE GAME?" confirmation
+@onready var settings_panel: Control = $HUD/SettingsPanel  # also the PAUSE menu (HELP / LEAVE)
+const Hearts := preload("res://scenes/hearts.gd")
 ## End-of-round result window (scenes/result_panel.gd, built in code).
 var end_panel: ResultPanel
 var play_again_button: Button
@@ -144,6 +146,8 @@ var _interact_cooldown: float = 0.0  # local: don't send a station request every
 var _effect_label: Label
 var _fps_label: Label
 var _paused_for_leave: bool = false   # solo: the leave window paused the round
+var _leaving: bool = false           # LEAVE was confirmed (don't send it twice)
+var _lives_rows: Dictionary = {}     # Tubig peer id -> {name: Label, hearts: Hearts}
 var _intro_go_at: float = -1.0       # host: seconds left until GO (-1 = not counting)
 var _intro_seconds: float = 0.0      # host: the round length to start on GO
 var _ready_wait: float = 0.0         # host: seconds spent waiting for slow devices
@@ -184,13 +188,15 @@ func _ready() -> void:
 	GameState.round_state = GameState.RoundState.READY
 	quiz_panel.choice_made.connect(_on_local_choice)
 	quiz_panel.help_requested.connect(_on_help_pressed)
-	$HUD/TopBar/SettingsButton.pressed.connect(func(): $HUD/SettingsPanel.open())
-	$HUD/TopBar/PauseButton.pressed.connect(_toggle_pause)
-	$HUD/TopBar/LeaveButton.pressed.connect(_on_leave_pressed)
+	# ONE button (top right): pauses the round and opens the pause menu
+	# (settings + HELP + LEAVE). Closing the menu resumes.
+	$HUD/TopBar/PauseButton.pressed.connect(_on_pause_pressed)
+	settings_panel.closed.connect(_on_menu_closed)
+	settings_panel.leave_pressed.connect(_on_leave_pressed)
 	answer_popup.dismissed.connect(_on_popup_dismissed)
 	# phone joystick + RUN button: off while a window covers the game
 	$HUD/TouchControls.is_blocked = func(): return quiz_panel.visible or answer_popup.visible \
-		or end_panel.visible or pause_label.visible or $HUD/SettingsPanel.visible \
+		or end_panel.visible or settings_panel.visible \
 		or leave_modal.is_open() or round_intro.is_open()
 	$HUD/TouchControls.excluded_rects = func():
 		return [$HUD/HelpAlert/Panel.get_global_rect()] if help_alert.visible else []
@@ -198,7 +204,6 @@ func _ready() -> void:
 	play_again_button.pressed.connect(_on_play_again)
 	menu_button.pressed.connect(_on_leave)
 	end_panel.visible = false
-	pause_label.visible = false
 	warning_label.text = ""
 	warning_glow.modulate.a = 0.0
 	minimap.set_maze(maze, maze_origin, TILE)
@@ -209,8 +214,6 @@ func _ready() -> void:
 	_add_vignette()
 	_add_effect_label()
 	_add_fps_label()
-	pause_label.text = "PAUSED — tap the pause button to resume" if GameState.is_mobile_ui() \
-		else "PAUSED — press Esc or the pause button to resume"
 	get_viewport().size_changed.connect(_apply_ui_scale)
 	_apply_ui_scale()
 	if not Network.online:
@@ -218,7 +221,6 @@ func _ready() -> void:
 	else:
 		mode_label.text = "Host (LAN)" if Network.is_host() else "LAN"
 	_update_hud()
-	_show_message("Waiting for players...", 30.0)
 
 	Network.host_left.connect(_on_host_left)
 	if multiplayer.is_server():
@@ -301,72 +303,135 @@ func _add_effect_label() -> void:
 	# your power-ups / penalties, under the top bar (e.g. "YELO SHIELD 7s")
 	_effect_label = Label.new()
 	_effect_label.name = "EffectLabel"
-	_effect_label.position = Vector2(16, 44)
 	_effect_label.add_theme_font_size_override("font_size", 16)
 	_effect_label.add_theme_color_override("font_color", Color(0.75, 0.95, 1.0))
 	_effect_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_effect_label.add_theme_constant_override("outline_size", 6)
 	_effect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$HUD.add_child(_effect_label)
-	$HUD.move_child(_effect_label, $HUD/MessageLabel.get_index())
+	$HUD/TopBar/Left.add_child(_effect_label)   # under the score and the hearts
 
 
-## Top bar, buttons and HUD text sizes (bigger on phones, inside the safe
-## area). Runs again when the window is resized or rotated.
+## HUD layout and text sizes (bigger on phones, inside the safe area).
+##   top left:   scroll icon + "0/6", then one row per Tubig: name + hearts
+##   top centre: the round ("Easy vs 1 Bot") and the clock under it
+##   top right:  the MAPA, then the pause button in the corner
+## Runs again when the window is resized or rotated.
 func _apply_ui_scale() -> void:
 	var vp := get_viewport()
 	var mobile := GameState.is_mobile_ui()
 	var inset := UiScale.safe_insets(vp)
-	var button := UiScale.touch_target(vp, 32.0)
-	var gap := 14.0 if mobile else 8.0
-	var bar_h := button + (12.0 if mobile else 6.0)
-	var bar: Control = $HUD/TopBar
-	bar.offset_bottom = bar_h + inset["top"]
-	# the three icon buttons, right to left: settings, pause, leave
-	var x: float = -inset["right"] - 12.0
-	for b in [$HUD/TopBar/SettingsButton, $HUD/TopBar/PauseButton, $HUD/TopBar/LeaveButton]:
-		b.offset_right = x
-		b.offset_left = x - button
-		b.offset_top = inset["top"] + (bar_h - button) / 2.0
-		b.offset_bottom = b.offset_top + button
-		x -= button + gap
-	var font := UiScale.font(vp, 18)
-	var lx: float = inset["left"] + 16.0
-	for l in [score_label, timer_label, frozen_label]:
-		l.add_theme_font_size_override("font_size", font)
-		l.offset_left = lx
-		l.offset_top = inset["top"] + (bar_h - font * 1.4) / 2.0
-		l.offset_bottom = l.offset_top + font * 1.4
-		l.offset_right = lx + font * (11.0 if l == score_label else 8.5)
-		lx = l.offset_right + font * 0.6
-	mode_label.add_theme_font_size_override("font_size", UiScale.font(vp, 14))
-	# the round label sits between the counters and the buttons (its offsets
-	# count from the right edge); hidden when there's no room for it
 	var vw := vp.get_visible_rect().size.x
-	mode_label.offset_right = x + gap - 8.0
-	mode_label.offset_left = maxf(lx - vw, mode_label.offset_right - 360.0)
-	mode_label.visible = mode_label.offset_right - mode_label.offset_left >= 110.0
-	mode_label.clip_text = true
-	mode_label.offset_top = inset["top"] + (bar_h - 24.0) / 2.0
-	mode_label.offset_bottom = mode_label.offset_top + 24.0
-	# minimap under the bar, a bit bigger on phones
+	var button := UiScale.touch_target(vp, 32.0)
+	var top: float = inset["top"] + (10.0 if mobile else 8.0)
+	# pause button in the top-right corner
+	var pause: Control = $HUD/TopBar/PauseButton
+	pause.offset_right = -inset["right"] - 12.0
+	pause.offset_left = pause.offset_right - button
+	pause.offset_top = top
+	pause.offset_bottom = top + button
+	# minimap just left of the pause button, a bit bigger on phones
 	var mm_scale := 1.35 if mobile else 1.0
-	minimap.offset_right = -inset["right"] - 20.0
+	minimap.offset_right = pause.offset_left - 10.0
 	minimap.offset_left = minimap.offset_right - 192.0 * mm_scale
-	minimap.offset_top = bar.offset_bottom + 8.0
-	minimap.offset_bottom = minimap.offset_top + 158.0 * mm_scale
+	minimap.offset_top = top
+	minimap.offset_bottom = top + 158.0 * mm_scale
 	minimap.label_size = UiScale.font(vp, 11)
-	message_label.add_theme_font_size_override("font_size", UiScale.font(vp, 20))
-	warning_label.add_theme_font_size_override("font_size", UiScale.font(vp, 20))
-	warning_label.offset_top = inset["top"] + 4.0
-	pause_label.add_theme_font_size_override("font_size", UiScale.font(vp, 28))
-	pause_label.offset_left = -vp.get_visible_rect().size.x * 0.45
-	pause_label.offset_right = vp.get_visible_rect().size.x * 0.45
-	pause_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_effect_label.position = Vector2(inset["left"] + 16.0, bar.offset_bottom + 6.0)
+	# left column: questions + lives (+ your power-up under them)
+	var font := UiScale.font(vp, 20)
+	var left: Control = $HUD/TopBar/Left
+	left.offset_left = inset["left"] + 16.0
+	left.offset_top = top
+	left.offset_right = left.offset_left + font * 12.0
+	score_label.add_theme_font_size_override("font_size", font)
+	$HUD/TopBar/Left/ScoreRow/ScrollIcon.custom_minimum_size = Vector2.ONE * font * 1.4
+	_scale_lives()
 	_effect_label.add_theme_font_size_override("font_size", UiScale.font(vp, 16))
+	# centre column: as wide as the gap between the left column and the map allows
+	var center: Control = $HUD/TopBar/Center
+	var map_left := vw + minimap.offset_left
+	var half := minf(vw / 2.0 - left.offset_right, map_left - vw / 2.0) - 8.0
+	half = clampf(half, 70.0, 200.0)
+	center.offset_left = -half
+	center.offset_right = half
+	center.offset_top = top - 2.0
+	var mode_font := UiScale.font(vp, 16)
+	var time_font := UiScale.font(vp, 26)
+	mode_label.add_theme_font_size_override("font_size", mode_font)
+	timer_label.add_theme_font_size_override("font_size", time_font)
+	center.offset_bottom = center.offset_top + (mode_font + time_font) * 1.4
+	$HUD/TopBar.offset_bottom = top + button
+	message_label.add_theme_font_size_override("font_size", UiScale.font(vp, 20))
+	# the "SILI NEARBY" banner sits under the clock
+	warning_label.add_theme_font_size_override("font_size", UiScale.font(vp, 20))
+	warning_label.offset_top = center.offset_bottom + 4.0
+	warning_label.offset_bottom = warning_label.offset_top + UiScale.font(vp, 20) * 1.5
 	end_panel.apply_layout()
 	help_alert.apply_ui_scale()
+
+
+## One row per Tubig under the score: name + hearts (only you in solo).
+func _build_lives() -> void:
+	for c in lives_box.get_children():
+		c.queue_free()
+	_lives_rows.clear()
+	for t in tubigs:
+		var row := HBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_theme_constant_override("separation", 6)
+		var name_label := Label.new()
+		var who: String = Network.player_name_of(t.peer_id)
+		name_label.text = who if who.length() <= 10 else who.left(9) + "…"
+		name_label.set_meta("who", name_label.text)
+		name_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		name_label.add_theme_constant_override("outline_size", 5)
+		row.add_child(name_label)
+		var hearts := Hearts.new()
+		row.add_child(hearts)
+		lives_box.add_child(row)
+		_lives_rows[t.peer_id] = {"name": name_label, "hearts": hearts}
+	_scale_lives()
+	_update_lives()
+
+
+func _scale_lives() -> void:
+	var font := UiScale.font(get_viewport(), 15)
+	# hearts start right after the longest name, so every row lines up
+	var widest := 0.0
+	for r in _lives_rows.values():
+		var label: Label = r["name"]
+		label.add_theme_font_size_override("font_size", font)
+		var f := label.get_theme_font("font")
+		widest = maxf(widest, f.get_string_size(label.get_meta("who", label.text), HORIZONTAL_ALIGNMENT_LEFT, -1, font).x)
+	for r in _lives_rows.values():
+		r["name"].custom_minimum_size.x = ceilf(widest)
+		r["hearts"].px = maxf(2.0, roundf(font / 6.0))
+
+
+## Every Tubig has max_freezes (3) hearts and each time they are caught
+## they lose one for good, even if they are saved. While frozen the hearts
+## turn icy blue. Caught with the last heart = OUT: no Buhos-Tubig rescue,
+## no Huling Hirit; they stay frozen for the rest of the round.
+func _update_lives() -> void:
+	lives_box.visible = not silis.is_empty() and not tubigs.is_empty()
+	for t in tubigs:
+		var r = _lives_rows.get(t.peer_id)
+		if r == null:
+			continue
+		r["hearts"].total = max_freezes
+		r["hearts"].full = clampi(max_freezes - t.freezes, 0, max_freezes)
+		r["hearts"].frozen = t.frozen
+		var color := Color(1.0, 0.85, 0.4) if t.is_local() else Color(0.95, 0.96, 1.0)
+		if t.out:
+			color = Color(0.55, 0.57, 0.62)
+		elif t.frozen:
+			color = Color(0.62, 0.85, 1.0)
+		r["name"].add_theme_color_override("font_color", color)
+		r["name"].text = ("%s OUT" % r["name"].get_meta("who")) if t.out else r["name"].get_meta("who")
+
+
+## Tests / logs: how many Tubigs are frozen ("Frozen: 1 / 2").
+func frozen_summary() -> String:
+	return "Frozen: %d / %d" % [tubigs.size() - _free_tubig_count(), tubigs.size()]
 
 
 func _add_fps_label() -> void:
@@ -570,13 +635,15 @@ func _spawn_all(roster: Array) -> void:
 		mode_label.text = "You: %s (%s)" % ["TUBIG" if me.is_tubig() else "SILI", Network.player_name_of(me.peer_id)]
 		if Network.solo_bot:
 			var info := Network.solo_round_info()
-			mode_label.text = "%s  vs  %d bot%s" % [info["name"], info["bots"], "" if info["bots"] == 1 else "s"]
+			var level: String = info["name"].get_slice(" - ", 1)   # "Round 1 - Easy" -> "Easy"
+			mode_label.text = "%s vs %d Bot%s" % [level, info["bots"], "" if info["bots"] == 1 else "s"]
 		elif Network.needs_lan_bot():
 			mode_label.text += "  ·  vs %s" % Network.BOT_NAMES[0]
 		minimap.set_local_player(me)
 		local_player = me
 		_follow_local_player()
 		camera.reset_smoothing()   # jump straight to your start spot
+	_build_lives()
 
 
 @rpc("authority", "call_local", "reliable")
@@ -587,14 +654,7 @@ func _start_round(seconds: float) -> void:
 	correct_answers = 0
 	GameState.round_state = GameState.RoundState.PLAYING
 	_update_hud()
-	var me = player_by_id.get(multiplayer.get_unique_id())
-	var clock := "  (%s for %d Tubig%s)" % [_format_time(seconds), tubigs.size(), "" if tubigs.size() == 1 else "s"]
-	if silis.is_empty():
-		_show_message("Test mode: no Sili (needs 2+ players over LAN).", 4.0)
-	elif me and not me.is_tubig():
-		_show_message("Freeze ALL the Tubigs! Bicol Express peppers = turbo.%s" % clock, 4.0)
-	else:
-		_show_message("Find ? scrolls and answer %d questions! Coolers = Yelo Shield.%s" % [questions_to_win, clock], 4.0)
+	# no start-of-round caption: the role reveal already said what to do
 
 
 # ============================================================= scrolls
@@ -1503,12 +1563,14 @@ func _tubig_caught(id: int) -> void:
 	if not player_by_id.has(id):
 		return
 	var t = player_by_id[id]
-	t.set_caught()
+	t.set_caught(max_freezes)
 	if t.is_local():
 		help_alert.close()
 		GameState.buzz(250)
 	var free := _free_tubig_count()
-	if free > 0:
+	if t.out:
+		_show_message("%s was frozen %d times — OUT!" % [Network.player_name_of(t.peer_id), max_freezes], 3.0)
+	elif free > 0:
 		_show_message("%s was caught! %d Tubig still free — touch them and answer to splash them free!" % [Network.player_name_of(t.peer_id), free], 3.0)
 	_update_hud()
 
@@ -1549,13 +1611,14 @@ func _host_check_team_out(after_failed_thaw: bool = false) -> void:
 	if _free_tubig_count() > 0:
 		return
 	# the only Tubig in the game still has a Huling Hirit (self-thaw) left
-	if tubigs.size() == 1 and not after_failed_thaw:
+	if tubigs.size() == 1 and not after_failed_thaw and not tubigs[0].out:
 		var t = tubigs[0]
 		if _thawing.has(t.peer_id) or _thaws_left(t) > 0:
 			return
 	var title := "SILI WINS! ALL TUBIG FROZEN"
 	if tubigs.size() == 1:
-		title = "SILI WINS! %s STAYED FROZEN" % Network.player_name_of(tubigs[0].peer_id).to_upper()
+		var who := Network.player_name_of(tubigs[0].peer_id).to_upper()
+		title = ("SILI WINS! %s IS OUT" % who) if tubigs[0].out else ("SILI WINS! %s STAYED FROZEN" % who)
 	_host_end(false, title)
 
 
@@ -1581,7 +1644,7 @@ func _host_check_self_thaw() -> void:
 	# Huling Hirit: the only Tubig (solo), or a Tubig with no teammate near
 	# for a while, can thaw themselves by answering 2 hard questions in a row
 	for t in tubigs:
-		if not t.frozen or t.answering or _thawing.has(t.peer_id) or _rescuing.has(t.peer_id) or _thaws_left(t) <= 0:
+		if not t.frozen or t.out or t.answering or _thawing.has(t.peer_id) or _rescuing.has(t.peer_id) or _thaws_left(t) <= 0:
 			continue
 		if tubigs.size() == 1:
 			if t.frozen_time >= min_frozen_time:
@@ -1643,7 +1706,8 @@ func _remove_player(id: int) -> void:
 		player_by_id.erase(id)
 		p.queue_free()
 		_show_message("%s left the game." % Network.player_name_of(p.peer_id), 2.5)
-		_update_hud()   # the Frozen: X / Y count changes
+		_build_lives()
+		_update_hud()
 
 
 # ============================================================ per frame
@@ -1711,7 +1775,7 @@ func _process(delta: float) -> void:
 	_update_stations(delta)
 	_check_local_interact(delta)
 	_update_fps_label(delta)
-	_update_leave_button()
+	_update_lives()
 	if is_instance_valid(local_player):
 		_effect_label.text = local_player.effect_text()
 	if message_time > 0.0:
@@ -1903,7 +1967,7 @@ func _round_ended_by_host() -> void:
 	quiz_panel.close()
 	answer_popup.close()
 	help_alert.close()
-	pause_label.visible = false
+	settings_panel.close()
 	var result: Label = end_panel.result_label
 	result.text = "GAME OVER — THE HOST LEFT"
 	result.modulate = Color(1.0, 0.75, 0.35)
@@ -1928,10 +1992,10 @@ func _on_host_left() -> void:
 	menu_button.text = "MAIN MENU"
 
 
-## LEAVE button (top bar). Who may leave during a round:
+## LEAVE button (in the pause menu). Who may leave during a round:
 ##   solo / test mode  - any time ("Your progress in this run will be lost.")
 ##   LAN host          - any time, but it ends the game for everyone
-##   LAN player        - only when the round is over (the end screen)
+##   LAN player        - only when the round is over (the menu has no LEAVE until then)
 ## It opens the "LEAVE GAME?" window (scenes/confirm_modal.gd): STAY / LEAVE.
 ## Solo pauses the round while it is open; LAN keeps playing for the others.
 func _can_leave_now() -> bool:
@@ -1939,15 +2003,8 @@ func _can_leave_now() -> bool:
 		or GameState.round_state == GameState.RoundState.ENDED
 
 
-func _update_leave_button() -> void:
-	var button: TextureButton = $HUD/TopBar/LeaveButton
-	button.disabled = not _can_leave_now()
-	button.tooltip_text = "Leave the game" if _can_leave_now() \
-		else "You can leave when the round is over"
-
-
 func _on_leave_pressed() -> void:
-	if leave_modal.is_open():
+	if leave_modal.is_open() or _leaving:
 		return
 	if not _can_leave_now():
 		leave_modal.tell("NOT YET", "You can leave when the round is over.")
@@ -1972,11 +2029,11 @@ func _on_leave_pressed() -> void:
 			_set_paused(false)
 		_paused_for_leave = false
 		return
+	_leaving = true
 	if Network.online and multiplayer.is_server() and GameState.round_state != GameState.RoundState.ENDED:
 		# tell everyone the game is over before closing the connection
 		_round_ended_by_host.rpc()
 		get_tree().create_timer(0.4).timeout.connect(_on_leave)
-		$HUD/TopBar/LeaveButton.disabled = true
 	else:
 		_on_leave()
 
@@ -1987,16 +2044,21 @@ func _show_message(text: String, seconds: float) -> void:
 
 
 func _update_hud() -> void:
-	score_label.text = "Questions: %d / %d" % [correct_answers, questions_to_win]
-	timer_label.text = "Time: %s" % _format_time(time_left)
-	frozen_label.visible = not silis.is_empty() and not tubigs.is_empty()
-	frozen_label.text = "Frozen: %d / %d" % [tubigs.size() - _free_tubig_count(), tubigs.size()]
+	score_label.text = "%d/%d" % [correct_answers, questions_to_win]
+	timer_label.text = _format_time(time_left)
+	_update_lives()
 
 
 # ================================================================ pause
+## The pause button / Esc opens the PAUSE menu (scenes/settings_panel.gd):
+## settings, HELP (How to Play) and LEAVE. There's no "PAUSED" banner.
+##   solo / LAN host - the round pauses for everyone while the menu is open;
+##                     closing it (X, Esc, tap outside) resumes
+##   LAN player      - the menu opens but the game keeps going; when the host
+##                     pauses, every player gets the menu (settings + help only)
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		_toggle_pause()
+		_on_pause_pressed()
 
 
 func _notification(what: int) -> void:
@@ -2007,19 +2069,35 @@ func _notification(what: int) -> void:
 			_set_paused.rpc(true)
 
 
-func _toggle_pause() -> void:
-	if not multiplayer.is_server():
-		_show_message("Only the host can pause.", 1.5)
+func _on_pause_pressed() -> void:
+	if settings_panel.visible:
+		settings_panel.close()   # -> _on_menu_closed resumes
 		return
 	# Pause through the round state (get_tree().paused would also freeze
 	# this node, so Esc could never resume — bug fixed earlier).
-	if GameState.round_state == GameState.RoundState.PLAYING:
-		_set_paused.rpc(true)
-	elif GameState.round_state == GameState.RoundState.PAUSED:
+	if multiplayer.is_server() and GameState.round_state == GameState.RoundState.PLAYING:
+		_set_paused.rpc(true)    # opens the menu on every device
+	else:
+		_open_menu()             # LAN player, or not mid-round: menu only
+
+
+func _open_menu() -> void:
+	var note := ""
+	if Network.online and not multiplayer.is_server():
+		note = "The host paused the game." if GameState.round_state == GameState.RoundState.PAUSED \
+			else "The game keeps going while this is open."
+	settings_panel.open_menu(note, _can_leave_now())
+
+
+func _on_menu_closed() -> void:
+	if multiplayer.is_server() and GameState.round_state == GameState.RoundState.PAUSED and not _leaving:
 		_set_paused.rpc(false)
 
 
 @rpc("authority", "call_local", "reliable")
 func _set_paused(paused: bool) -> void:
 	GameState.round_state = GameState.RoundState.PAUSED if paused else GameState.RoundState.PLAYING
-	pause_label.visible = paused
+	if paused:
+		_open_menu()
+	else:
+		settings_panel.close()

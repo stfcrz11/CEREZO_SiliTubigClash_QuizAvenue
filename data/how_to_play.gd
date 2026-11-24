@@ -39,7 +39,8 @@ static func text(mobile: bool, head_size: int) -> String:
 	out += "• %s on your MAPA show where the scrolls are. The %s can't see them — but may be waiting there!\n" % [_c("Yellow dots", GOLD), S]
 	out += "• While you answer you [b]can't move[/b] and [b]can't be tagged[/b].\n"
 	out += "• A %s is near? You get a warning: %s then %s\n" % [S, _c("SILI NEARBY!", "#ffa53d"), _c("RUN!", RED)]
-	out += "• Caught %ss freeze into an [b]ice block[/b].\n" % T
+	out += "• Caught %ss freeze into an [b]ice block[/b]. Everyone has [b]3 hearts[/b]: each freeze costs one, even if you are saved.\n" % T
+	out += "• Frozen with your [b]last heart[/b] = [b]OUT[/b] — nobody can save you and you can't thaw yourself.\n"
 	out += "• %s touch a frozen teammate and answer [b]1 question[/b] to splash them free.\n" % _c("Buhos-Tubig:", GREEN)
 	out += "• %s nobody can save you? Answer [b]2 hard questions in a row[/b] to thaw yourself.\n\n" % _c("Huling Hirit:", GREEN)
 
@@ -67,16 +68,16 @@ static func text(mobile: bool, head_size: int) -> String:
 	out += h.call("PLAYING", GOLD)
 	out += "• [b]SOLO VS BOT[/b]: 4 rounds, easy to difficult (1–3 bots). Win to unlock the next round; lose and retry. Your round is saved: next time choose RESUME or NEW GAME.\n"
 	out += "• [b]LAN[/b]: one player picks [b]HOST GAME[/b]; the others pick [b]JOIN GAME[/b] (same Wi-Fi or phone hotspot).\n"
-	out += "• [b]Leaving[/b]: the door button asks first. Solo — any time. LAN host — any time, but it [b]ends the game for everyone[/b]. Other players — after the round.\n\n"
+	out += "• [b]Leaving[/b]: LEAVE in the pause menu asks first. Solo — any time. LAN host — any time, but it [b]ends the game for everyone[/b]. Other players — after the round.\n\n"
 
 	out += h.call("CONTROLS", GOLD)
 	if mobile:
 		out += "• [b]Drag on the right half[/b] of the screen to move. Hold [b]RUN[/b] (bottom left) to sprint.\n"
 		out += "• Tap [b]USE[/b] at a station. Tap an answer. Tap [b]YES / NO[/b] on a help request.\n"
-		out += "• Top right: [b]door[/b] = leave, [b]pause[/b] (host), [b]gear[/b] = settings. The phone's [b]Back[/b] button pauses or closes a window."
+		out += "• Top right: the [b]pause[/b] button opens the menu — settings, HELP and LEAVE (it pauses the round for the host). The phone's [b]Back[/b] button does the same or closes a window."
 	else:
 		out += "%s or arrows — move      %s or %s — sprint\n" % [_key("W A S D"), _key("Shift"), _key("Space")]
 		out += "%s %s %s %s — answer (1–4 also work)      %s — use a station\n" % [_key("A"), _key("B"), _key("C"), _key("D"), _key("E")]
 		out += "%s — ask for help      %s / %s — answer a help request\n" % [_key("H"), _key("Y"), _key("N")]
-		out += "%s — pause (host) or close a window"  % _key("Esc")
+		out += "%s — pause menu (settings, help, leave) or close a window"  % _key("Esc")
 	return out

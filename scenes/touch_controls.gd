@@ -3,6 +3,7 @@ extends Control
 ## is on in Settings; on by default on touch screens).
 ##  - Joystick: touch anywhere on the RIGHT half of the screen and drag.
 ##  - RUN button (bottom left): hold to sprint.
+##  - Settings -> Switch controls swaps the two sides.
 ##  - USE button (above RUN): appears next to a power-up station; tap it
 ##    to answer the station's question (same as the E key).
 ## They press the same input actions as the keyboard (move_left/right/up/
@@ -55,16 +56,29 @@ func _inset(side: String) -> float:
 	return UiScale.safe_insets(get_viewport())[side]
 
 
+## Settings -> Switch controls mirrors everything left <-> right.
+func _side_x(from_left: float) -> float:
+	if GameState.swap_controls:
+		return size.x - from_left * _k() - _inset("right")
+	return from_left * _k() + _inset("left")
+
+
 func _stick_home() -> Vector2:
-	return Vector2(size.x - 130 * _k() - _inset("right"), size.y - 130 * _k() - _inset("bottom"))
+	var x := 130 * _k() + _inset("left") if GameState.swap_controls 		else size.x - 130 * _k() - _inset("right")
+	return Vector2(x, size.y - 130 * _k() - _inset("bottom"))
 
 
 func _run_center() -> Vector2:
-	return Vector2(110 * _k() + _inset("left"), size.y - 120 * _k() - _inset("bottom"))
+	return Vector2(_side_x(110), size.y - 120 * _k() - _inset("bottom"))
 
 
 func _use_center() -> Vector2:
-	return Vector2(110 * _k() + _inset("left"), size.y - 250 * _k() - _inset("bottom"))
+	return Vector2(_side_x(110), size.y - 250 * _k() - _inset("bottom"))
+
+
+## The joystick half of the screen (right half, or left when switched).
+func _in_stick_half(pos: Vector2) -> bool:
+	return pos.x < size.x * 0.5 if GameState.swap_controls else pos.x > size.x * 0.5
 
 
 func _is_excluded(pos: Vector2) -> bool:
@@ -104,7 +118,7 @@ func _input(event: InputEvent) -> void:
 				_run_touch = event.index
 				Input.action_press("sprint")
 				get_viewport().set_input_as_handled()
-			elif _stick_touch == -1 and event.position.x > size.x * 0.5 and event.position.y > 50 					and not _is_excluded(event.position):
+			elif _stick_touch == -1 and _in_stick_half(event.position) and event.position.y > 50 					and not _is_excluded(event.position):
 				_stick_touch = event.index
 				_stick_center = event.position     # the joystick appears under your thumb
 				_move_stick(event.position)

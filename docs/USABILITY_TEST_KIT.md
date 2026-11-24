@@ -45,7 +45,7 @@ controls feel OK on the phone?
 | Touch targets ≥ 44 px | Answer buttons, RUN, USE, pause, ✕ | |
 | Alternative feedback | Sound + text + vibration on tag / answer | |
 | Volume control | Settings: music and sound separately | |
-| Pause | Pause button + auto-pause when leaving the app | |
+| Pause | Pause button → pause menu (settings, HELP, LEAVE) + auto-pause when leaving the app | |
 | Game pace | 15 s / 10–12 s answer timers; is it enough for slower readers? | |
 | Input | Joystick on the right half; is it usable left-handed? | |
 

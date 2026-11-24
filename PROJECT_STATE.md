@@ -8,6 +8,16 @@ Everything below comes from the actual files in this folder: `.gd`, `.tscn`,
 `project.godot`, `README.md` and `assets/`. Anything I could not confirm from the files is
 marked **[CHECK]**.
 
+> **v1.3.0 (2026-11-24).** HUD and pause menu rebuilt from the student's
+> sketches: scroll icon + `0/6` and a name + hearts row per Tubig top left
+> (`scenes/hearts.gd`), round + clock top centre, MAPA + one pause button top
+> right; `FrozenLabel`, `PauseLabel`, the settings and leave buttons and the
+> start-of-round captions removed. 3 hearts per Tubig (`max_freezes`), OUT on
+> the 3rd freeze (no rescue, no self-thaw). Pause button / Esc opens
+> `SettingsPanel.open_menu()` with HELP and LEAVE (LAN players: settings +
+> HELP). Phone controls layout choice (`GameState.swap_controls`), vibration
+> row on every device. Not exported yet; the APK is 1.2.0.
+>
 > **v1.2.0 (2026-11-17).** Phone-tested update: one mobile/desktop switch
 > (`GameState.is_mobile_ui()`, env `SILITUBIG_MOBILE_UI` for tests), UI sizes
 > from `scenes/ui_scale.gd`, shared pixel look `scenes/pixel_ui.gd` + pixel font
