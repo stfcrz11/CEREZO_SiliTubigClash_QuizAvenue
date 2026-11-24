@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Sili-Tubig: Quiz Avenue"
-config/version="1.3.0"
+config/version="1.3.2"
 run/main_scene="res://scenes/title_screen.tscn"
 config/use_custom_user_dir=true
 config/custom_user_dir_name="Godot/app_userdata/Sili-Tubig- Task Avenue"
