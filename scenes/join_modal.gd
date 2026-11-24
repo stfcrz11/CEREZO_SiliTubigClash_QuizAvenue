@@ -37,8 +37,10 @@ func _ready() -> void:
 	game_template.visible = false   # the template is copied, never shown
 	$Center/Store/Body/Scroll/VBox/IpCard/VBox/IpRow/ConnectButton.pressed.connect(func(): _connect_to(ip_edit.text))
 	ip_edit.text_submitted.connect(_connect_to)
-	# phones: a number pad with a "." key (digits and periods for an IP)
-	ip_edit.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER_DECIMAL
+	# phones: the URL keyboard has digits and a "." key that can be used
+	# many times. (NUMBER_DECIMAL allowed only ONE "." on Android, so an IP
+	# like 192.168.43.1 could not be typed: defect D-10.)
+	ip_edit.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_URL
 	_make_code_card()
 	Network.connected_to_host.connect(_on_connected)
 	Network.connection_failed.connect(_on_connection_failed)
@@ -150,7 +152,11 @@ func _follow_keyboard(delta: float) -> void:
 		var row: Control = focused.get_parent()
 		var bottom := row.get_global_rect().end.y + _kb_shift  # where it is without the shift
 		var free_bottom := vp.get_visible_rect().size.y - kb - 12.0
-		target = clampf(bottom - free_bottom, 0.0, store.get_global_rect().position.y + _kb_shift)
+		# In landscape the keyboard can cover most of the screen, so the
+		# window may slide past the top edge; only the typed-in row has to
+		# stay fully on screen.
+		var row_top := row.get_global_rect().position.y + _kb_shift
+		target = clampf(bottom - free_bottom, 0.0, maxf(0.0, row_top - 8.0))
 	_kb_shift = lerpf(_kb_shift, target, minf(1.0, delta * 14.0))
 	if absf(_kb_shift - target) < 0.5:
 		_kb_shift = target

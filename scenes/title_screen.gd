@@ -24,6 +24,7 @@ const SoloResumeModal := preload("res://scenes/solo_resume_modal.gd")
 
 var leaderboard: LeaderboardModal     # TOP PLAYERS window
 var resume_modal: SoloResumeModal   # SOLO GAME FOUND window
+var _name_kb_shift: float = 0.0     # how far the name window is moved up for the phone keyboard
 
 
 func _ready() -> void:
@@ -198,6 +199,42 @@ func _fit(panel: Control, size: Vector2) -> void:
 	panel.offset_right = size.x / 2.0
 	panel.offset_top = -size.y / 2.0
 	panel.offset_bottom = size.y / 2.0
+	if panel == $NamePopup:
+		_name_kb_shift = 0.0   # freshly centred: no keyboard shift applied
+
+
+func _process(delta: float) -> void:
+	if $NamePopup.visible or _name_kb_shift != 0.0:
+		_name_follow_keyboard(delta)
+
+
+## Phones: when the on-screen keyboard is up, slide the CHANGE PLAYER NAME
+## window up so the name box and SAVE / CANCEL stay above the keyboard
+## (in landscape the keyboard covered them). Slides back when it closes.
+func _name_follow_keyboard(delta: float) -> void:
+	if not DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD) and _name_kb_shift == 0.0:
+		return   # PC: no on-screen keyboard
+	var kb_px := 0.0
+	if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+		kb_px = float(DisplayServer.virtual_keyboard_get_height())
+	var input: LineEdit = $NamePopup/Margin/VBox/NameInput
+	var target := 0.0
+	if kb_px > 0.0 and $NamePopup.visible and input.has_focus():
+		var vp := get_viewport()
+		var kb := kb_px / UiScale.content_scale(vp)   # screen pixels -> UI units
+		var buttons: Control = $NamePopup/Margin/VBox/Buttons
+		var bottom := buttons.get_global_rect().end.y + _name_kb_shift   # without the shift
+		var free_bottom := vp.get_visible_rect().size.y - kb - 12.0
+		var input_top := input.get_global_rect().position.y + _name_kb_shift
+		target = clampf(bottom - free_bottom, 0.0, maxf(0.0, input_top - 8.0))
+	var new_shift := lerpf(_name_kb_shift, target, minf(1.0, delta * 14.0))
+	if absf(new_shift - target) < 0.5:
+		new_shift = target
+	# move both offsets by the change (keeps the size from _fit)
+	var step := new_shift - _name_kb_shift
+	$NamePopup.offset_top -= step
+	$NamePopup.offset_bottom -= step
+	_name_kb_shift = new_shift
 
 
 func _show_credits(open: bool) -> void:
