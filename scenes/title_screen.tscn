@@ -235,6 +235,8 @@ modulate = Color(1, 0.5, 0.45, 1)
 layout_mode = 2
 horizontal_alignment = 1
 autowrap_mode = 3
+text_overrun_behavior = 3
+max_lines_visible = 2
 
 [node name="SettingsButton" type="TextureButton" parent="." unique_id=1962081943]
 layout_mode = 1

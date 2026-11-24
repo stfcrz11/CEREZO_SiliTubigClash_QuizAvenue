@@ -116,6 +116,9 @@ func _size_png_button(b: TextureButton, height: float) -> void:
 func close() -> void:
 	Network.stop_listening()
 	Network.leave()
+	# an error like "Could not connect" was already shown in this window; clear
+	# it so the title screen does not show it again later (D-09)
+	Network.last_error = ""
 	visible = false
 
 

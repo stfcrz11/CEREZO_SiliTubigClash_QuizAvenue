@@ -127,6 +127,10 @@ settings + HELP window on clients, hearts with several Tubigs over LAN.
 | D-05 | Low | 2026-11-10, review | Edit `leaderboard.cfg` by hand | Edit is detected | Edited numbers were trusted | Checksum + reset (DT-08) | Fixed |
 | D-06 | Low | 2026-11-24, screenshot (phone mode) | Open the pause menu on a 2340×1080 phone screen | Settings list readable above HELP / LEAVE | Stacked HELP and LEAVE left room for only ~3 settings rows | HELP and LEAVE side by side | Fixed |
 | D-07 | Low | 2026-11-24, student review | Look at the hearts row in the HUD | Hearts right after the name | Wide fixed name column left a big gap | Name column = width of the longest name | Fixed |
+| D-08 | Low | 2026-11-24, phone (AI-run adb test) | Rename, then Settings > Reset my data > confirm, look at the title card | Card shows "Player" at once | Old name stayed until the game was restarted (settings panel called a title function that did not exist) | `GameState.data_reset` signal; title card refreshes on it | Fixed in v1.3.4, verified on phone |
+| D-09 | Low | 2026-11-24, phone (AI-run adb test) | Join with a wrong IP, CANCEL, play Solo, LEAVE | Title screen without old messages | "Could not connect..." shown again on the title, 3 lines, last line over the menu frame | Join/Host window clears the error when closed; title error label max 2 lines with "..." | Fixed in v1.3.4, verified on phone (stale message) and PC phone-mode screenshot (2-line cap) |
+| D-10 | High | 2026-11-24, phone (AI-run adb test) | Join > type `192.168.43.1` on the phone keyboard | All dots typed | Number keyboard allowed only one "." | URL keyboard for the IP box | Fixed in v1.3.1, verified on phone (v1.3.2, v1.3.3) |
+| D-11 | Medium | 2026-11-24, phone (AI-run adb test) | Rename > delete "Player" > type a 7+ letter name | Up to 12 letters | Only 6 letters fit (Android keyboard counted the deleted "Player" against the 12 limit) | Keyboard opened on an empty field, then the saved name is filled in | Fixed in v1.3.3, verified on phone |
 
 Earlier defects and fixes (v1.0): see `PROJECT_STATE.md` §10 (29 entries).
 

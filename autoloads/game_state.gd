@@ -7,6 +7,7 @@ extends Node
 ## (scenes/touch_controls.gd) press these same actions.
 
 signal touch_controls_changed
+signal data_reset   # "Reset my data" finished: screens showing the name etc. refresh
 
 enum RoundState { READY, PLAYING, QUESTION, PAUSED, ENDED }
 
@@ -180,6 +181,7 @@ func reset_all_data() -> void:
 	set_touch_controls(DisplayServer.is_touchscreen_available() or OS.has_feature("mobile"))
 	Sound.set_music(true, 80)
 	Sound.set_sfx(true, 100)
+	data_reset.emit()
 
 
 func set_touch_controls(on: bool) -> void:

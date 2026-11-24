@@ -289,8 +289,7 @@ func _on_reset() -> void:
 	GameState.reset_all_data()
 	open()   # show the default values
 	reset_button.text = "Data cleared"
-	if get_tree().current_scene.has_method("_normalize_player_name"):
-		get_tree().current_scene._normalize_player_name()
+	# the title screen hears GameState.data_reset and shows the default name
 
 
 func _music_changed() -> void:
