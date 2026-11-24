@@ -4,7 +4,7 @@
 
 | Tool | Used for | What the student checked / changed |
 |---|---|---|
-| Claude (Anthropic), in Claude Code | Writing and changing GDScript (maze rules, quiz kinds, power-up stations, bots, UI scripts, player-data checks), Python art scripts (`tools/art/`), headless test scripts (`tools/tests/`), and drafts of these documents | *Student: describe what you reviewed, tested on your phone, and changed yourself* |
+| Claude (Anthropic), in Claude Code | Writing and changing GDScript (maze rules, quiz kinds, power-up stations, bots, UI scripts, player-data checks), Python art scripts (`tools/art/`), headless test scripts (`tools/tests/`), and drafts of these documents. v1.3 (2026-11-24): turned the student's hand-drawn HUD and pause-screen sketches into the new HUD, hearts rule, pause menu and layout setting | *Student: describe what you reviewed, tested on your phone, and changed yourself. The v1.3 screen layout and the 3-freeze rule are the student's own design (sketches)* |
 
 Rules followed: AI-written test results are labelled "Executed (AI)" with the date and the
 machine. No test data, tester feedback or profiler numbers were invented. Phone tests,

@@ -185,7 +185,7 @@ func _patrol_step() -> void:
 
 func _pick_patrol() -> Vector2:
 	for t in game.tubigs:
-		if (t.frozen or t.answering) and randf() < 0.7:
+		if (t.frozen or t.answering) and not t.out and randf() < 0.7:   # an OUT Tubig never moves again
 			return _floor_point_away(t.global_position)
 	if tune["pepper"] > 0.0 and sili.turbo_time <= 0.0 and randf() < tune["pepper"]:
 		var p: int = game.nearest_ready_station(sili, "pepper")

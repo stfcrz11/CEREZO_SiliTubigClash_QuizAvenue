@@ -39,7 +39,36 @@ new name. What stays the same, on purpose:
 - The LAN discovery message (`SILITUBIG_TASKAVENUE` in
   `autoloads/network.gd`), so devices on this version still find each other.
 
-## What's new in this update (1.2.0)
+## What's new in this update (1.3.0)
+
+Built from the student's hand-drawn screen sketches (HUD frame and pause frame).
+
+- **New in-game HUD.** No dark top bar. Top left: a scroll icon with the
+  question count (`0/6`) and, under it, one row per Tubig with their name and
+  **3 hearts** (solo: only you). Top centre: the round (`Easy vs 1 Bot`) with
+  the clock under it (`2:59`). Top right: the MAPA and **one pause button**
+  in the corner. The settings and leave buttons and the "Frozen: X / Y" text
+  are gone.
+- **3 hearts = 3 freezes.** Every Tubig can be frozen 3 times per round. Each
+  freeze costs a heart for good, even after a rescue. While frozen the hearts
+  turn icy blue. Frozen with the last heart = **OUT**: no Buhos-Tubig rescue,
+  no Huling Hirit, the name turns grey ("Stef OUT") and the ice block says
+  "Stef is OUT". Solo: OUT ends the round ("SILI WINS! STEF IS OUT").
+- **Pause menu instead of the PAUSED banner.** The pause button, Esc or the
+  Android Back button opens the SETTINGS window with **HELP** (How to Play)
+  and **LEAVE** (LEAVE GAME? STAY / LEAVE). Solo and the LAN host: the round
+  pauses while it is open and closing it resumes. When the host pauses, the
+  other players get the same window with settings and HELP only. A LAN
+  player who opens it by themselves keeps playing.
+- **Controls layout choice (phones).** Settings > Controls > Layout:
+  **RUN / USE left | Joystick right** (default) or **Joystick left |
+  RUN / USE right**. Saved on the device.
+- **Vibration** is listed in Settings on every device (greyed out on PC:
+  "phones and tablets only").
+- **No yellow caption at the start of a round** ("Find ? scrolls...",
+  "Waiting for players..."); the role reveal already explains the goal.
+
+## What's new in 1.2.0
 
 - **Solo vs Bot remembers your round.** When you win a round, the next round
   is saved right away. Next time you press SOLO VS BOT past Round 1, a
@@ -91,8 +120,8 @@ Filipino culture (mythology, epics, traditions, dances, games).
   runs out. Round time: **3:00 for 1 Tubig, 20 s less for each extra Tubig**
   (Tubigs can answer at the same time), never below 1:30.
 - **Sili wins** by freezing **all** Tubigs at the same time (catching one is
-  not enough, teammates can save them), or when time runs out. The top bar
-  shows **Frozen: X / Y**.
+  not enough, teammates can save them), or when time runs out. The HUD shows
+  every Tubig's name and **hearts** (top left).
 - **Scrolls:** Tubigs see the scrolls as **yellow dots on their minimap**;
   the Sili doesn't, but can guess where they are going.
 - **Answering:** walking into a scroll opens a question for that Tubig only
@@ -113,6 +142,8 @@ Filipino culture (mythology, epics, traditions, dances, games).
   teammate who touches a frozen Tubig must answer 1 question to splash them
   free (1.5 s of safety plus a speed burst). **Huling Hirit:** a Tubig with no
   one to save them can thaw themselves with 2 hard questions in a row.
+  **3 hearts:** each freeze costs a heart; frozen with the last heart = OUT
+  (nobody can save them for the rest of the round).
 - **Power-up stations**, in new random spots inside the maze every round
   (press **E** / tap **USE**): Halo-Halo coolers give a Tubig a Yelo Shield,
   Bicol Express peppers give a Sili Extra Anghang (bugtong riddles), and
@@ -227,16 +258,17 @@ Instances → 2 or more, then Run. Host in one window, join from the others.
 | Answer | Click a choice, or keys A B C D (1–4 also work) |
 | Ask a teammate for help | H (or the button) |
 | Accept / refuse a help request | Y / N (or the buttons) |
-| Pause / Resume | Esc or the pause button, top right (host only; pauses everyone). The game also pauses when the phone app goes to the background |
-| Leave the game | Door button, top right → LEAVE GAME? window (STAY / LEAVE; Esc = STAY). Solo: any time (the round pauses while it is open). LAN host: any time, ends the game for everyone. LAN players: only after the round is over |
+| Pause menu (settings, HELP, LEAVE) | Esc or the pause button, top right. Solo / LAN host: pauses the round for everyone; closing the menu resumes. LAN players: opens the menu without pausing. The game also pauses when the phone app goes to the background |
+| Leave the game | Pause menu → LEAVE → LEAVE GAME? window (STAY / LEAVE; Esc = STAY). Solo: any time. LAN host: any time, ends the game for everyone. LAN players: only after the round is over (no LEAVE button until then) |
 | Close a window | Esc (the SOLO GAME FOUND window: Esc / Back returns to PLAY) |
-| Settings (audio, controls) | Gear button, top right |
-| **Phone:** move | Drag on the right half of the screen (joystick — phones / touch screens only) |
-| **Phone:** sprint | Hold the RUN button (bottom left) |
+| Settings (audio, controls) | Gear button on the title screen; pause menu in the game |
+| **Phone:** move | Drag on the right half of the screen (left half with the swapped layout; joystick — phones / touch screens only) |
+| **Phone:** sprint | Hold the RUN button (bottom left, or bottom right with the swapped layout) |
 | **Phone:** use a station | Tap USE (appears next to a station) |
 | **Phone:** answer / help | Tap an answer; tap ASK A TEAMMATE FOR HELP; tap YES / NO |
-| **Phone:** leave / pause / settings | Door, pause and gear buttons, top right (48 dp or bigger) |
+| **Phone:** pause menu | Pause button, top right (48 dp or bigger) |
 | **Phone:** back / close / pause | Android Back button (same as Esc) |
+| **Phone:** controls layout | Settings → Layout: RUN / USE left + joystick right, or the other way round |
 
 Phones show only touch instructions and desktops only keyboard instructions
 (How to Play, Settings and in-game hints).
@@ -282,10 +314,15 @@ Phones show only touch instructions and desktops only keyboard instructions
 - Fits any screen shape (wide phones, 4:3, 16:9)
 - Sound: title music, button clicks, game start, a loop while you answer,
   correct/wrong, help alert, Sili-nearby warning, game over, win/lose
-- Settings (gear button, top right of the title screen and the game): music
-  and sound effects on/off + volume, controls list; saved on the device
+- Settings (gear button on the title screen, pause menu in the game): music
+  and sound effects on/off + volume, controls list, touch controls, layout,
+  vibration, Show FPS, Reset my data; saved on the device
 - Android touch controls: joystick (right half) and RUN button (left), turned on
-  automatically on touch screens (switch in Settings, shown only on touch devices)
+  automatically on touch screens (switch in Settings, shown only on touch devices);
+  **v1.3:** the two sides can be swapped (Settings → Layout)
+- **v1.3:** sketch-based HUD (score + hearts top left, round + clock top
+  centre, MAPA + pause button top right), 3 hearts per Tubig with OUT on the
+  3rd freeze, pause menu with HELP and LEAVE, no start-of-round caption
 - **v1.2:** bigger phone UI sized from the real screen (48 dp+ buttons, safe
   area, larger text); finger scrolling in Credits / How to Play / Leaderboard
   / Settings; platform-only instructions; new quiz card (A–D, 2 x 2, time bar,
@@ -391,6 +428,7 @@ godot --headless --path . --export-debug "Android" build/SiliTubig_QuizAvenue.ap
 
 Latest export: **Android (debug APK)** — `build/SiliTubig_QuizAvenue.apk`
 Result: **Success** (2026-11-21, Godot 4.7.2), 72.2 MB, no export warnings.
+**1.3.0 has not been exported yet** — the APK above is still 1.2.0.
 - Package `com.cerezo.silitubig.taskavenue`, label "Sili-Tubig: Quiz Avenue",
   version 1.2.0, version code 4, min Android 7.0 (API 24), target API 36,
   signed with the debug key (checked with apksigner; same certificate as the
@@ -404,6 +442,26 @@ Result: **Success** (2026-11-21, Godot 4.7.2), 72.2 MB, no export warnings.
   by `tools/art/make_icon.py`), also the Windows .ico.
 
 ## Changelog
+
+### 1.3.0 — HUD and pause menu update (version code 5)
+
+- New HUD from the student's sketches (`scenes/maze_game.tscn`,
+  `_apply_ui_scale()` in `scenes/maze_game.gd`): scroll icon + `0/6`, a name
+  and hearts row per Tubig (`scenes/hearts.gd`, drawn in code), round +
+  clock in the centre, MAPA + one pause button top right. Removed: top bar
+  colour, settings / leave buttons, `FrozenLabel`, `PauseLabel`.
+- Hearts rule: `max_freezes = 3` per Tubig per round (`player.gd`:
+  `freezes`, `out`). OUT Tubigs can't be rescued (`can_be_rescued`) or
+  self-thaw; solo OUT ends the round; bots stop lurking next to them.
+- Pause menu: `settings_panel.gd` `open_menu()` adds HELP (How to Play
+  window inside the panel) and LEAVE; `maze_game.gd` `_on_pause_pressed()`,
+  `_open_menu()`, `_on_menu_closed()`. LAN players get settings + HELP only.
+- Controls layout choice: `GameState.swap_controls` (saved as
+  `controls/swap`), mirrored in `touch_controls.gd`; Layout row with two
+  buttons in Settings. Vibration row shown on every device.
+- Start-of-round yellow captions removed.
+- Tests: `test_leave.gd` and `test_lan12.gd` updated for the removed nodes
+  (`_can_leave_now()`, `frozen_summary()`).
 
 ### 1.2.0 — Quiz Avenue update (version code 4)
 

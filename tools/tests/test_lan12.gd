@@ -46,7 +46,7 @@ func _process(_d: float) -> bool:
 		var roles := []
 		for p in game.player_by_id.values():
 			roles.append("%s=%s%s" % [net.player_name_of(p.peer_id), p.role, " (bot)" if p.is_bot else ""])
-		print("%s GO at %d ms | roles: %s | frozen label: %s | round time %s" % [role, t_go, ", ".join(roles), game.frozen_label.text, game._format_time(game.time_left)])
+		print("%s GO at %d ms | roles: %s | frozen label: %s | round time %s" % [role, t_go, ", ".join(roles), game.frozen_summary(), game._format_time(game.time_left)])
 		t_step = frames
 	if t_go < 0:
 		return frames > 60 * 60
@@ -62,7 +62,7 @@ func _process(_d: float) -> bool:
 					step = 1; t_step = frames
 			1:
 				if frames - t_step > 60:
-					print("host frozen label after tag: ", game.frozen_label.text, " | bot node: ", game.has_node("BotSili_991"))
+					print("host frozen label after tag: ", game.frozen_summary(), " | bot node: ", game.has_node("BotSili_991"))
 					game._host_end(false, "TEST END")
 					step = 2; t_step = frames
 			2:
@@ -84,7 +84,7 @@ func _process(_d: float) -> bool:
 				return frames - t_step > 120
 	else:
 		if step == 0 and frames - t_step > 200:
-			print("%s frozen label after tag: %s | bot on this device: %s" % [role, game.frozen_label.text, game.player_by_id.has(991)])
+			print("%s frozen label after tag: %s | bot on this device: %s" % [role, game.frozen_summary(), game.player_by_id.has(991)])
 			step = 1
 		if step == 1 and gs.round_state == gs.RoundState.ENDED:
 			print("%s saw the round end" % role)

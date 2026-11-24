@@ -21,6 +21,7 @@ var player_name: String = "Player"
 var touch_controls: bool = DisplayServer.is_touchscreen_available() or OS.has_feature("mobile")
 var vibration: bool = true          # buzz the phone when tagged / answering
 var show_fps: bool = false          # performance readout in the game (for testing)
+var swap_controls: bool = false     # phones: joystick on the LEFT, RUN / USE on the right
 var best_solo_round: int = 0        # highest SOLO VS BOT round cleared (0-4)
 
 
@@ -146,6 +147,13 @@ func set_show_fps(on: bool) -> void:
 	_save("controls", "show_fps", on)
 
 
+## Settings -> Switch controls: mirror the phone controls (left-handed play).
+func set_swap_controls(on: bool) -> void:
+	swap_controls = on
+	_save("controls", "swap", on)
+	touch_controls_changed.emit()
+
+
 ## Short phone vibration (haptic feedback). Does nothing on PC or when off.
 func buzz(ms: int) -> void:
 	if vibration and OS.has_feature("mobile"):
@@ -167,6 +175,7 @@ func reset_all_data() -> void:
 	player_name = "Player"
 	vibration = true
 	show_fps = false
+	swap_controls = false
 	best_solo_round = 0
 	set_touch_controls(DisplayServer.is_touchscreen_available() or OS.has_feature("mobile"))
 	Sound.set_music(true, 80)
@@ -200,6 +209,8 @@ func _load_settings() -> void:
 	vibration = v if v is bool else true
 	var f = settings.get_value("controls", "show_fps", false)
 	show_fps = f if f is bool else false
+	var sw = settings.get_value("controls", "swap", false)
+	swap_controls = sw if sw is bool else false
 	var b = settings.get_value("solo", "best_round", 0)
 	best_solo_round = clampi(b, 0, 4) if b is int else 0
 

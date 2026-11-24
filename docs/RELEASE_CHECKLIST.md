@@ -1,6 +1,8 @@
 # Release Readiness Checklist and Evidence Index (PT7 · PA2)
 
-## 1. Minimum game requirements (module) — status in v1.2.0
+Status for **v1.3.0** (2026-11-24).
+
+## 1. Minimum game requirements (module) — status in v1.3.0
 
 | Requirement | Where | Status |
 |---|---|---|
@@ -8,18 +10,18 @@
 | Complete core loop with a clear goal | Maze round, scrolls, win/lose | Done |
 | Mobile input + immediate feedback | Joystick, RUN, USE; sound, text popups, vibration | Done (vibration: verify on phone) |
 | Win / loss / progression | Team win/lose, 4 solo rounds, best round saved | Done |
-| Pause or settings + restart / retry | Pause button / Esc, Settings, Play Again / Retry / Next Round | Done |
+| Pause or settings + restart / retry | Pause button / Esc → pause menu (settings, HELP, LEAVE), Play Again / Retry / Next Round | Done (v1.3 pause menu) |
 | Credits and acknowledgements | CREDITS button in game, `CREDITS.md`, README | Done — **audio sources still to add** |
 | Player-data / service component | Local profile, leaderboard with tamper check, reset | Done |
-| Error handling, stable installable build | Connection errors, damaged saves, backgrounding | **Rebuild APK for 1.2.0 and install from clean** |
+| Error handling, stable installable build | Connection errors, damaged saves, backgrounding | **Rebuild APK for 1.3.0 and install from clean** |
 
 ## 2. Release steps (to do)
 
 - [ ] Fill in the audio sources in `CREDITS.md` and `docs/RESPONSIBLE_DEVELOPMENT.md`
 - [ ] Copy the tileset's and template's license terms into `docs/RESPONSIBLE_DEVELOPMENT.md`
-- [ ] Export the Android APK (Project → Export → Android) as `build/SiliTubig_QuizAvenue.apk`
-- [ ] Uninstall the old app, install the new APK, run TC-01…TC-26 on the phone
-- [ ] Record the commit ID in README; tag the release: `git tag v1.2.0` then `git push origin v1.2.0`
+- [ ] Export the Android APK (Project → Export → Android) as `build/SiliTubig_QuizAvenue.apk` (version 1.3.0, code 5)
+- [ ] Uninstall the old app, install the new APK, run TC-01…TC-28 and H-01…H-10 on the phone
+- [ ] Record the commit ID in README; tag the release: `git tag v1.3.0` then `git push origin v1.3.0`
 - [ ] Fill the acceptance summary in `TEST_PLAN.md` and the phone table in `PERFORMANCE.md`
 
 ## 3. Evidence index
@@ -33,6 +35,8 @@
 | Usability protocol and findings | `docs/USABILITY_TEST_KIT.md` (fill in with your testers) |
 | AI and asset disclosure | `docs/RESPONSIBLE_DEVELOPMENT.md`, `CREDITS.md` |
 | User guide | `docs/USER_GUIDE.md` |
+| v1.3 HUD / pause sketches (design source) | *your sketch photos — add them to the evidence folder* |
+| v1.3 screenshots (HUD, pause menu, help, frozen, settings layout) | *take them on your phone; PC versions were checked by `tools/tests/shot_hud.gd`* |
 | Automated tests | `tools/tests/` |
 | Weekly reflections | *your own PDFs: Lastname_Firstname_Week##_Reflection.pdf* |
 | Commits | https://github.com/stfcrz11/CEREZO_SiliTubigClash_TaskAvenue/commits |

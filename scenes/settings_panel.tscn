@@ -186,8 +186,32 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.62, 0.66, 0.76, 1)
 theme_override_font_sizes/font_size = 12
-text = "joystick (right half) + RUN button (left)"
+text = "on-screen joystick + RUN / USE buttons"
 autowrap_mode = 3
+
+[node name="SwitchRow" type="HBoxContainer" parent="Center/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="Center/Panel/Margin/VBox/SwitchRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Layout"
+
+[node name="Normal" type="Button" parent="Center/Panel/Margin/VBox/SwitchRow"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "RUN / USE left  |  Joystick right"
+
+[node name="Swapped" type="Button" parent="Center/Panel/Margin/VBox/SwitchRow"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "Joystick left  |  RUN / USE right"
 
 [node name="Controls" type="RichTextLabel" parent="Center/Panel/Margin/VBox"]
 layout_mode = 2

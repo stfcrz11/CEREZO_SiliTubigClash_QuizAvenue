@@ -4,7 +4,7 @@
 
 | Item | Value |
 |---|---|
-| Build | 1.2.0 (Android version code 3), commit: *record `git log -1 --format=%h` here* |
+| Build | 1.3.0 (Android version code 5), commit: *record `git log -1 --format=%h` here* |
 | Development PC | Windows 11 Home, NVIDIA GeForce MX250, Godot 4.7.2-stable |
 | Target devices | *fill in: phone model, Android version, screen size* (at least one physical phone + one emulator or second phone) |
 | Network | Phone hotspot or home Wi-Fi, UDP ports 7777 (game) and 7778 (discovery) allowed |
@@ -21,15 +21,16 @@ defect that loses data, blocks finishing a round, shows another player's data, o
 | R3 | LAN host / join, 2–6 players, 7th refused | TC-05, TC-06 |
 | R4 | Movement on keyboard and touch (joystick, RUN, USE; joystick only on touch devices) | TC-07, TC-08, U-06 |
 | R5 | Scroll questions, help request, Tubig win | TC-09, TC-10 |
-| R6 | Tag → freeze; all frozen or time up → Sili wins | TC-11, TC-12 |
+| R6 | Tag → freeze; all frozen or time up → Sili wins; 3 hearts, OUT on the 3rd freeze | TC-11, TC-12, H-03…H-06 |
 | R7 | Buhos-Tubig rescue quiz | TC-13 |
 | R8 | Huling Hirit self-thaw | TC-14 |
 | R9 | Power-up stations: random spots inside the maze, used with E / USE; shield, turbo, gate | TC-15, TC-16, TC-17, TC-18, TC-19 |
 | R10 | Bot behaviour by difficulty | TC-20 |
-| R11 | Pause (Esc / button), settings saved, pause on app background | TC-21, TC-22, TC-23 |
+| R11 | Pause menu (Esc / button) with settings, HELP, LEAVE; settings saved (incl. controls layout); pause on app background | TC-21, TC-22, TC-23, H-07…H-10 |
 | R12 | Player data: name rules, leaderboard, tamper check, reset | DT-01 … DT-10 (`DATA_AND_SECURITY.md`) |
-| R13 | Error handling: host leaves, wrong IP, player leaves; Leave button rules | TC-24, TC-25, TC-27, TC-28 |
+| R13 | Error handling: host leaves, wrong IP, player leaves; LEAVE rules (pause menu) | TC-24, TC-25, TC-27, TC-28 |
 | R14 | Performance: steady 60 FPS on the target phone | TC-26 (`PERFORMANCE.md`) |
+| R15 | HUD matches the sketch: score + hearts top left, round + clock top centre, MAPA + pause top right; no start caption | H-01, H-02 |
 
 ## 3. Test cases and results
 
@@ -59,12 +60,12 @@ these results are real but are **not** phone tests. Repeat them yourself and add
 | TC-18 | Bot tags a shielded Tubig | Tag blocked, Sili extinguished 5 s | Stun 4.9 s | Executed (AI): Pass |
 | TC-19 | Press E next to a Kalamansi gate, answer correctly | Moved to the other side | Cell (20,6) as expected | Executed (AI): Pass |
 | TC-20 | Rounds 3–4 bots | Bots use peppers, retry after a wrong bugtong, tag | Seen in real-time runs | Executed (AI): Pass |
-| TC-21 | Pause button / Esc as host | Everyone paused, timers stop | Not run yet | Not run |
+| TC-21 | Pause button / Esc as host | Everyone paused, timers stop; pause menu opens; closing it resumes | Solo: paused + menu open, closed → PLAYING (`shot_hud.gd`, 2026-11-24); LAN not run | Executed (AI): Pass (solo) |
 | TC-22 | Change settings, restart the app | Settings kept | Not run yet (v1.0 tested audio) | Not run |
 | TC-23 | Phone: go to home screen mid-round | Round paused on return | Not run | Phone test needed |
 | TC-24 | Host closes the game mid-round | Clients return to title with "The host left the game." | Tested in an earlier version | Re-test |
 | TC-25 | Join with a wrong IP | "Could not connect…" message | Not re-tested | Not run |
-| TC-27 | Solo: tap LEAVE twice | 1st tap: "Tap LEAVE again…"; 2nd tap: title screen | As expected (`test_leave.gd`, ROLE=solo) | Executed (AI): Pass |
+| TC-27 | Solo: pause menu → LEAVE → LEAVE GAME? → LEAVE | Title screen | v1.2 run as expected (`test_leave.gd`, ROLE=solo); v1.3: LEAVE moved into the pause menu, script updated, re-run by hand on the phone | Re-test |
 | TC-28 | LAN, 2 instances on one PC: client taps LEAVE mid-round; host leaves mid-round | Client button locked with message; host warned that the game ends for everyone; client sees "GAME OVER — THE HOST LEFT" with Main Menu | As expected (`test_leave.gd`, ROLE=host + ROLE=client, real time) | Executed (AI): Pass |
 | TC-26 | 60 s Solo Round 4 performance scenario | ≥ 55 FPS average on the phone | PC: 59–60 FPS (see `PERFORMANCE.md`) | Phone test needed |
 
@@ -92,6 +93,29 @@ Screenshots of the intro, quiz, feedback, result popups and leave window at
 a real phone (touch, safe area, vibration), 6 players, the 12 s slow-device
 drop, Help hand-off during the countdown.
 
+### v1.3 checks (executed by Claude (AI), 2026-11-24, development PC, Godot 4.7.2)
+
+Scripts: `tools/tests/sim_solo.gd` (bot game, no script errors),
+`tools/tests/shot_hud.gd` (H-01, H-02, H-07, H-08) and `tools/tests/test_hearts.gd`
+(H-03…H-06, H-09), at 2340×1080 phone mode (`SILITUBIG_MOBILE_UI=1`) and 1280×720 desktop.
+These are PC results, **not** phone tests.
+
+| ID | Check | Expected | Result |
+|---|---|---|---|
+| H-01 | HUD layout | Scroll icon + `0/6` and name + 3 hearts top left; `Easy vs 1 Bot` + `2:59` top centre; MAPA + pause button top right; no dark bar | Pass (phone + desktop screenshots) |
+| H-02 | Round start | No yellow caption at the bottom when the round starts | Pass |
+| H-03 | 1st freeze | 2 hearts left, icy blue; can be rescued | Pass (hearts=2, rescuable=true) |
+| H-04 | 2nd freeze after a thaw | 1 heart left | Pass (hearts=1) |
+| H-05 | 3rd freeze | 0 hearts, OUT, can't be rescued, label "Stef is OUT", name grey "Stef OUT" | Pass |
+| H-06 | Solo OUT | Round ends "SILI WINS! STEF IS OUT" | Pass |
+| H-07 | Pause button (solo) | Round PAUSED, menu with settings + HELP + LEAVE; ✕ → PLAYING | Pass |
+| H-08 | HELP | How to Play window opens over the menu; BACK / Esc returns to the menu | Pass |
+| H-09 | Controls layout | Two Layout buttons, chosen one gold; choice saved (`swap_controls`); controls text says left / right half | Pass (desktop run; real touch on phone not tested) |
+| H-10 | Vibration row | Visible on phone mode; visible but greyed out on desktop ("phones and tablets only") | Pass |
+
+**Not tested:** real phone touch with the swapped layout, LAN host pause showing the
+settings + HELP window on clients, hearts with several Tubigs over LAN.
+
 ## 4. Defect log
 
 | ID | Severity | Found | Steps to reproduce | Expected | Actual (before fix) | Fix | Status |
@@ -101,6 +125,8 @@ drop, Help hand-off during the countdown.
 | D-03 | Medium | 2026-11-10, screenshot | Open the title screen | Sharp pixel buttons | Buttons blurred (title forced smooth filtering) | Title uses nearest filtering; logo stays smooth | Fixed |
 | D-04 | Medium | 2026-11-10, review | Export APK and get tagged on a phone | Phone vibrates | Android needs the VIBRATE permission, which was off | `permissions/vibrate=true` in `export_presets.cfg` | Fixed; verify on phone |
 | D-05 | Low | 2026-11-10, review | Edit `leaderboard.cfg` by hand | Edit is detected | Edited numbers were trusted | Checksum + reset (DT-08) | Fixed |
+| D-06 | Low | 2026-11-24, screenshot (phone mode) | Open the pause menu on a 2340×1080 phone screen | Settings list readable above HELP / LEAVE | Stacked HELP and LEAVE left room for only ~3 settings rows | HELP and LEAVE side by side | Fixed |
+| D-07 | Low | 2026-11-24, student review | Look at the hearts row in the HUD | Hearts right after the name | Wide fixed name column left a big gap | Name column = width of the longest name | Fixed |
 
 Earlier defects and fixes (v1.0): see `PROJECT_STATE.md` §10 (29 entries).
 

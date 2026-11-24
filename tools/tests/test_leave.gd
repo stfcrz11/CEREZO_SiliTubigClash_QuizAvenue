@@ -43,7 +43,6 @@ func _process(_d: float) -> bool:
 		t_round = frames
 	if t_round < 0:
 		return frames > 60 * 40
-	var leave_btn = game.get_node("HUD/TopBar/LeaveButton")
 	match role:
 		"solo":
 			if frames == t_round + 30:
@@ -53,7 +52,7 @@ func _process(_d: float) -> bool:
 				game._on_leave_pressed()
 		"client":
 			if frames == t_round + 30:
-				print("client: leave disabled during round = ", leave_btn.disabled)
+				print("client: leave disabled during round = ", (not game._can_leave_now()))
 				game._on_leave_pressed()
 				print("client: pressed anyway -> still in game: ", current_scene.name == "MazeGame", " msg: ", game.message_label.text)
 			if game.end_panel.visible and not done_tap:
@@ -62,7 +61,7 @@ func _process(_d: float) -> bool:
 			if done_tap and frames == t_round + 90:
 				print("client END: ", game.end_panel.result_label.text, " | ",
 					game.end_panel.stats_label.text.replace("\n", " / "),
-					" | menu button: ", game.menu_button.text, " | leave disabled: ", leave_btn.disabled,
+					" | menu button: ", game.menu_button.text, " | leave disabled: ", (not game._can_leave_now()),
 					" | still in game scene: ", current_scene.name == "MazeGame")
 				return true
 		"host":

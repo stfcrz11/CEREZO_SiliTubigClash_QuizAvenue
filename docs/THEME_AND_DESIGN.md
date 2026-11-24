@@ -1,6 +1,6 @@
 # Theme, Player and Game-Integration Analysis (SA5)
 
-**Game:** Sili-Tubig: Quiz Avenue · **Version:** 1.2.0 · **Engine:** Godot 4.7.2 · **Platform:** Android (landscape), Windows for development
+**Game:** Sili-Tubig: Quiz Avenue · **Version:** 1.3.0 · **Engine:** Godot 4.7.2 · **Platform:** Android (landscape), Windows for development
 **Theme:** Board Games or Brain Games (trivia chase), built on the Filipino street game *sili-tubig*
 
 ## 1. Theme-to-Mechanics Justification
@@ -13,7 +13,7 @@ the art.
 
 | Theme element | Mechanic | Player decision it creates |
 |---|---|---|
-| Sili tags, tubig saves (street game) | Sili freezes Tubig by touch; frozen Tubig become ice blocks | Run, hide behind buildings, or go back for a frozen teammate |
+| Sili tags, tubig saves (street game) | Sili freezes Tubig by touch; frozen Tubig become ice blocks. Each Tubig has **3 hearts**: every freeze costs one, the 3rd freeze = OUT | Run, hide behind buildings, or go back for a frozen teammate; play safer when you are down to your last heart |
 | Splashing water to rescue | **Buhos-Tubig**: touch a frozen teammate and answer 1 question to free them | Risk stopping next to a Sili to answer, or keep running |
 | Knowing your culture | "?" scrolls: 10 correct answers win for the Tubig team | Go for the scroll the Sili may be guarding, or ask a teammate for help |
 | Last chance (*huling hirit*) | Self-thaw with 2 hard questions in a row when no one can help | Only works if you really know the answers |
@@ -48,7 +48,9 @@ flowchart LR
     F --> A
     G --> A
     C -->|tagged| H[Frozen ice block]
-    H --> I[Teammate rescue quiz or Huling Hirit]
+    H --> J{Last heart?}
+    J -- yes --> K[OUT for the round]
+    J -- no --> I[Teammate rescue quiz or Huling Hirit]
     I --> A
 ```
 
