@@ -86,8 +86,13 @@ func _show_name_popup(open: bool) -> void:
 	_set_name_hint("")
 	if open:
 		var input: LineEdit = $NamePopup/Margin/VBox/NameInput
-		input.text = GameState.player_name
+		# Android: the keyboard copies the field when focus starts and counts
+		# letters it was given against max_length, so with "Player" in the
+		# field only 12 - 6 = 6 new letters fit even after deleting it (D-11).
+		# Open the keyboard on an EMPTY field, then put the saved name in.
+		input.text = ""
 		input.grab_focus()
+		input.text = GameState.player_name
 		input.caret_column = input.text.length()
 
 
