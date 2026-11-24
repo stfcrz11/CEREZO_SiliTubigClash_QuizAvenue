@@ -38,6 +38,8 @@ func _ready() -> void:
 	resume_modal.back.connect(_show_play.bind(true))
 	# profile card (top-left) -> CHANGE PLAYER NAME window
 	$ProfileCard/HBox/NameLabel.text = GameState.player_name
+	# after "Reset my data" show "Player" at once, not only after a restart (D-08)
+	GameState.data_reset.connect(_on_data_reset)
 	$ProfileCard.pressed.connect(_show_name_popup.bind(true))
 	$NamePopup/Margin/VBox/Header/CloseButton.pressed.connect(_show_name_popup.bind(false))
 	$NamePopup/Margin/VBox/Buttons/CancelButton.pressed.connect(_show_name_popup.bind(false))
@@ -94,6 +96,10 @@ func _show_name_popup(open: bool) -> void:
 		input.grab_focus()
 		input.text = GameState.player_name
 		input.caret_column = input.text.length()
+
+
+func _on_data_reset() -> void:
+	$ProfileCard/HBox/NameLabel.text = GameState.player_name
 
 
 func _save_player_name() -> void:
